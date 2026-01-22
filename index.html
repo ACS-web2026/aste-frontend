@@ -464,112 +464,119 @@
             state.searchResults = [];
             render();
         }
-  
-    if (state.filters.tipologia) {
-        const tipologiaCercata = state.filters.tipologia.toLowerCase();
-        risultatiFiltrati = risultatiFiltrati.filter(r => 
-            r.tipologia.toLowerCase().includes(tipologiaCercata)
-        );
-        console.log(`Dopo filtro tipologia: ${risultatiFiltrati.length}`);
-    }
-    
-    if (state.filters.prezzoMin) {
-        const prezzoMin = parseInt(state.filters.prezzoMin);
-        risultatiFiltrati = risultatiFiltrati.filter(r => r.prezzo >= prezzoMin);
-        console.log(`Dopo filtro prezzoMin: ${risultatiFiltrati.length}`);
-    }
-    
-    if (state.filters.prezzoMax) {
-        const prezzoMax = parseInt(state.filters.prezzoMax);
-        risultatiFiltrati = risultatiFiltrati.filter(r => r.prezzo <= prezzoMax);
-        console.log(`Dopo filtro prezzoMax: ${risultatiFiltrati.length}`);
-    }
-    
-    // Se non ci sono risultati dopo i filtri, mostra almeno alcuni risultati
-    if (risultatiFiltrati.length === 0) {
-        console.log("Nessun risultato dopo filtri, mostro alcuni risultati generici");
-        // Prendi i primi 5 risultati generati
-        risultatiFiltrati = state.searchResults.slice(0, 5);
-        // Modifica alcuni per matchare i filtri
-        if (state.filters.comune) {
-            risultatiFiltrati.forEach(r => r.comune = state.filters.comune);
-        }
-        if (state.filters.tipologia) {
-            risultatiFiltrati.forEach(r => r.tipologia = state.filters.tipologia);
-        }
-        state.searchStatus = `⚠️ Nessun risultato esatto. Mostro ${risultatiFiltrati.length} annunci simili`;
-    } else {
-        state.searchResults = risultatiFiltrati;
-        state.searchStatus = `✅ Trovati ${state.searchResults.length} annunci`;
-    }
-    
-    // Genera match con clienti
-    state.clientMatches = [];
-    if (state.searchResults.length > 0 && state.clients.length > 0) {
-        state.clients.forEach(client => {
-            // Trova annunci nel comune del cliente
-            const annunciCompatibili = state.searchResults.filter(r => 
-                client.comunes.some(comuneCliente => 
-                    r.comune.toLowerCase().includes(comuneCliente.toLowerCase())
-                )
-            );
+
+        async function performSearch() {
+            state.isLoading = true;
+            state.searchStatus = '🔍 Ricerca in corso su 7 portali...';
+            render();
             
-            if (annunciCompatibili.length > 0) {
-                annunciCompatibili.slice(0, 2).forEach(annuncio => {
-                    state.clientMatches.push({
-                        id: Date.now() + Math.random(),
-                        clientName: client.name,
-                        annuncio: `${annuncio.tipologia} - ${annuncio.comune} (€${annuncio.prezzo.toLocaleString()})`,
-                        data: new Date().toLocaleDateString('it-IT')
-                    });
+            // Simula delay server (2-3 secondi)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Lista di comuni disponibili (ampliata)
+            const defaultComuni = [
+                'Milano', 'Roma', 'Torino', 'Napoli', 'Firenze', 'Bologna', 'Genova',
+                'Venezia', 'Verona', 'Padova', 'Bari', 'Palermo', 'Catania', 'Cagliari'
+            ];
+            
+            // Determina il comune da usare
+            const comuneCercato = state.filters.comune || '';
+            const comuniUsare = comuneCercato ? [comuneCercato] : defaultComuni;
+            
+            const tipologie = ['Appartamento', 'Villa', 'Attico', 'Loft', 'Garage', 'Terreno'];
+            const fonti = ['Immobiliare.it', 'Casa.it', 'Subito.it', 'Idealista', 'Bakeca', 'Astegiudiziarie.it', 'PortaleAste.it'];
+            
+            // Genera 8-15 risultati
+            const numRisultati = Math.floor(Math.random() * 8) + 8;
+            let risultati = [];
+            
+            for (let i = 0; i < numRisultati; i++) {
+                const comune = comuniUsare[Math.floor(Math.random() * comuniUsare.length)];
+                const tipologia = state.filters.tipologia || tipologie[Math.floor(Math.random() * tipologie.length)];
+                const prezzo = Math.floor(Math.random() * 700000) + 80000; // 80.000 - 780.000
+                const fonte = fonti[Math.floor(Math.random() * fonti.length)];
+                
+                risultati.push({
+                    id: i + 1,
+                    tipologia: tipologia,
+                    indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante', 'Vittorio Emanuele'][Math.floor(Math.random() * 6)]} ${Math.floor(Math.random() * 150) + 1}`,
+                    comune: comune,
+                    prezzo: prezzo,
+                    descrizione: `${tipologia} di ${Math.floor(Math.random() * 200) + 50} mq, ${['ristrutturato', 'nuovo', 'da ristrutturare', 'in ottime condizioni'][Math.floor(Math.random() * 4)]}. ${['Con giardino', 'Con box auto', 'In centro', 'Zona residenziale', 'Con terrazzo'][Math.floor(Math.random() * 5)]}.`,
+                    dataAsta: `2024-0${Math.floor(Math.random() * 3) + 4}-${Math.floor(Math.random() * 28) + 1}`,
+                    fonte: fonte,
+                    link: `https://${fonte.toLowerCase().replace('.it', '')}.it/annuncio-${Math.floor(Math.random() * 10000)}`,
+                    metriQuadrati: Math.floor(Math.random() * 200) + 50,
+                    locali: Math.floor(Math.random() * 5) + 1
                 });
             }
-        });
-    }
-    
-    state.isLoading = false;
-    render();
-}
-            });
             
-            // Applica filtri se presenti
+            // Applica filtri
             if (state.filters.tipologia) {
-                state.searchResults = state.searchResults.filter(r => 
-                    r.tipologia.toLowerCase().includes(state.filters.tipologia.toLowerCase())
+                risultati = risultati.filter(r => 
+                    r.tipologia.toLowerCase() === state.filters.tipologia.toLowerCase()
                 );
             }
             
             if (state.filters.prezzoMin) {
-                state.searchResults = state.searchResults.filter(r => 
-                    r.prezzo >= parseInt(state.filters.prezzoMin)
-                );
+                const prezzoMin = parseInt(state.filters.prezzoMin) || 0;
+                risultati = risultati.filter(r => r.prezzo >= prezzoMin);
             }
             
             if (state.filters.prezzoMax) {
-                state.searchResults = state.searchResults.filter(r => 
-                    r.prezzo <= parseInt(state.filters.prezzoMax)
-                );
+                const prezzoMax = parseInt(state.filters.prezzoMax) || 10000000;
+                risultati = risultati.filter(r => r.prezzo <= prezzoMax);
             }
+            
+            // Assicura almeno alcuni risultati
+            if (risultati.length === 0 && comuneCercato) {
+                // Crea almeno 3 risultati per il comune cercato
+                for (let i = 0; i < 3; i++) {
+                    const tipologia = state.filters.tipologia || tipologie[Math.floor(Math.random() * tipologie.length)];
+                    const prezzo = Math.floor(Math.random() * 500000) + 100000;
+                    
+                    risultati.push({
+                        id: 100 + i,
+                        tipologia: tipologia,
+                        indirizzo: `Via ${['Centrale', 'Garibaldi', 'Roma', 'Dante'][Math.floor(Math.random() * 4)]} ${Math.floor(Math.random() * 100) + 1}`,
+                        comune: comuneCercato,
+                        prezzo: prezzo,
+                        descrizione: `${tipologia} in ottime condizioni nel comune di ${comuneCercato}`,
+                        dataAsta: `2024-04-${Math.floor(Math.random() * 20) + 1}`,
+                        fonte: 'Demo System',
+                        link: '#',
+                        metriQuadrati: Math.floor(Math.random() * 150) + 50,
+                        locali: Math.floor(Math.random() * 4) + 1
+                    });
+                }
+                state.searchStatus = `✅ 3 annunci demo per ${comuneCercato}`;
+            } else {
+                state.searchStatus = `✅ Trovati ${risultati.length} annunci`;
+            }
+            
+            state.searchResults = risultati;
             
             // Genera match con clienti
             state.clientMatches = [];
-            state.clients.forEach(client => {
-                const matchCount = Math.floor(Math.random() * 3);
-                for (let i = 0; i < matchCount; i++) {
-                    const randomResult = state.searchResults[Math.floor(Math.random() * state.searchResults.length)];
-                    if (randomResult) {
+            if (risultati.length > 0 && state.clients.length > 0) {
+                state.clients.forEach(client => {
+                    const match = risultati.find(r => 
+                        client.comunes.some(c => 
+                            r.comune.toLowerCase().includes(c.toLowerCase())
+                        )
+                    );
+                    if (match) {
                         state.clientMatches.push({
-                            id: Date.now() + i,
+                            id: Date.now(),
                             clientName: client.name,
-                            annuncio: `${randomResult.tipologia} - ${randomResult.comune} (€${randomResult.prezzo.toLocaleString()})`,
+                            annuncio: `${match.tipologia} - ${match.comune} (€${match.prezzo.toLocaleString()})`,
                             data: new Date().toLocaleDateString('it-IT')
                         });
                     }
-                }
-            });
+                });
+            }
             
             state.isLoading = false;
-            state.searchStatus = `✅ Ricerca completata: ${state.searchResults.length} annunci trovati`;
             render();
         }
 
