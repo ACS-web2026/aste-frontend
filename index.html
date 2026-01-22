@@ -464,72 +464,7 @@
             state.searchResults = [];
             render();
         }
-
-       async function performSearch() {
-    state.isLoading = true;
-    state.searchStatus = '🔍 Ricerca in corso su 7 portali...';
-    render();
-    
-    // Simula delay server (2-3 secondi)
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Lista di comuni disponibili (ampliata)
-    const defaultComuni = [
-        'Milano', 'Roma', 'Torino', 'Napoli', 'Firenze', 'Bologna', 'Genova',
-        'Venezia', 'Verona', 'Padova', 'Bari', 'Palermo', 'Catania', 'Cagliari'
-    ];
-    
-    // Se l'utente inserisce un comune, lo aggiungiamo alla lista
-    const comuniList = state.filters.comune 
-        ? [state.filters.comune, ...defaultComuni]  // Il comune cercato + altri
-        : defaultComuni;
-    
-    const tipologie = ['Appartamento', 'Villa', 'Attico', 'Loft', 'Garage', 'Terreno'];
-    const fonti = ['Immobiliare.it', 'Casa.it', 'Subito.it', 'Idealista', 'Bakeca', 'Astegiudiziarie.it', 'PortaleAste.it'];
-    
-    // Genera sempre almeno 15 risultati
-    const numRisultati = 15;
-    state.searchResults = Array.from({length: numRisultati}, (_, i) => {
-        // Se c'è un comune specificato, usalo più frequentemente
-        const comuneScelto = state.filters.comune 
-            ? (Math.random() > 0.3 ? state.filters.comune : defaultComuni[Math.floor(Math.random() * defaultComuni.length)])
-            : comuniList[Math.floor(Math.random() * comuniList.length)];
-        
-        const tipologia = state.filters.tipologia || tipologie[Math.floor(Math.random() * tipologie.length)];
-        const prezzo = Math.floor(Math.random() * 700000) + 80000; // 80.000 - 780.000
-        const fonte = fonti[Math.floor(Math.random() * fonti.length)];
-        
-        return {
-            id: i + 1,
-            tipologia: tipologia,
-            indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante', 'Vittorio Emanuele'][Math.floor(Math.random() * 6)]} ${Math.floor(Math.random() * 150) + 1}`,
-            comune: comuneScelto,
-            prezzo: prezzo,
-            descrizione: `${tipologia} di ${Math.floor(Math.random() * 200) + 50} mq, ${['ristrutturato', 'nuovo', 'da ristrutturare', 'in ottime condizioni'][Math.floor(Math.random() * 4)]}. ${['Con giardino', 'Con box auto', 'In centro', 'Zona residenziale', 'Con terrazzo'][Math.floor(Math.random() * 5)]}.`,
-            dataAsta: `2024-0${Math.floor(Math.random() * 3) + 4}-${Math.floor(Math.random() * 28) + 1}`,
-            fonte: fonte,
-            link: `https://${fonte.toLowerCase().replace('.it', '')}.it/annuncio-${Math.floor(Math.random() * 10000)}`,
-            metriQuadrati: Math.floor(Math.random() * 200) + 50,
-            locali: Math.floor(Math.random() * 5) + 1
-        };
-    });
-    
-    // DEBUG: Mostra quanti risultati prima dei filtri
-    console.log(`Risultati generati: ${state.searchResults.length}`);
-    console.log(`Comune cercato: "${state.filters.comune}"`);
-    console.log(`Tipologia cercata: "${state.filters.tipologia}"`);
-    
-    // Applica filtri DOPO la generazione
-    let risultatiFiltrati = [...state.searchResults];
-    
-    if (state.filters.comune) {
-        const comuneCercato = state.filters.comune.toLowerCase();
-        risultatiFiltrati = risultatiFiltrati.filter(r => 
-            r.comune.toLowerCase().includes(comuneCercato)
-        );
-        console.log(`Dopo filtro comune: ${risultatiFiltrati.length}`);
-    }
-    
+  
     if (state.filters.tipologia) {
         const tipologiaCercata = state.filters.tipologia.toLowerCase();
         risultatiFiltrati = risultatiFiltrati.filter(r => 
