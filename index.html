@@ -15,7 +15,6 @@
 
     <script>
         // Configurazione
-        const API_URL = 'http://localhost:3000';
         const MASTER_PASSWORD = 'aste2025';
 
         // State globale
@@ -470,44 +469,42 @@
             state.searchStatus = '🔍 Ricerca in corso su 7 portali...';
             render();
             
-            // Simula delay server (2-3 secondi)
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // SIMULA delay server (1-2 secondi) - NO chiamate reali!
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // Lista di comuni disponibili (ampliata)
+            // Genera dati MOCK locali
             const defaultComuni = [
                 'Milano', 'Roma', 'Torino', 'Napoli', 'Firenze', 'Bologna', 'Genova',
                 'Venezia', 'Verona', 'Padova', 'Bari', 'Palermo', 'Catania', 'Cagliari'
             ];
             
-            // Determina il comune da usare
             const comuneCercato = state.filters.comune || '';
             const comuniUsare = comuneCercato ? [comuneCercato] : defaultComuni;
             
             const tipologie = ['Appartamento', 'Villa', 'Attico', 'Loft', 'Garage', 'Terreno'];
             const fonti = ['Immobiliare.it', 'Casa.it', 'Subito.it', 'Idealista', 'Bakeca', 'Astegiudiziarie.it', 'PortaleAste.it'];
             
-            // Genera 8-15 risultati
-            const numRisultati = Math.floor(Math.random() * 8) + 8;
+            // Genera 10-20 risultati mock
+            const numRisultati = Math.floor(Math.random() * 11) + 10;
             let risultati = [];
             
             for (let i = 0; i < numRisultati; i++) {
                 const comune = comuniUsare[Math.floor(Math.random() * comuniUsare.length)];
                 const tipologia = state.filters.tipologia || tipologie[Math.floor(Math.random() * tipologie.length)];
-                const prezzo = Math.floor(Math.random() * 700000) + 80000; // 80.000 - 780.000
-                const fonte = fonti[Math.floor(Math.random() * fonti.length)];
+                const prezzo = Math.floor(Math.random() * 800000) + 50000;
                 
                 risultati.push({
                     id: i + 1,
                     tipologia: tipologia,
-                    indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante', 'Vittorio Emanuele'][Math.floor(Math.random() * 6)]} ${Math.floor(Math.random() * 150) + 1}`,
+                    indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante'][Math.floor(Math.random() * 5)]} ${Math.floor(Math.random() * 200) + 1}`,
                     comune: comune,
                     prezzo: prezzo,
-                    descrizione: `${tipologia} di ${Math.floor(Math.random() * 200) + 50} mq, ${['ristrutturato', 'nuovo', 'da ristrutturare', 'in ottime condizioni'][Math.floor(Math.random() * 4)]}. ${['Con giardino', 'Con box auto', 'In centro', 'Zona residenziale', 'Con terrazzo'][Math.floor(Math.random() * 5)]}.`,
-                    dataAsta: `2024-0${Math.floor(Math.random() * 3) + 4}-${Math.floor(Math.random() * 28) + 1}`,
-                    fonte: fonte,
-                    link: `https://${fonte.toLowerCase().replace('.it', '')}.it/annuncio-${Math.floor(Math.random() * 10000)}`,
-                    metriQuadrati: Math.floor(Math.random() * 200) + 50,
-                    locali: Math.floor(Math.random() * 5) + 1
+                    descrizione: `${tipologia} di ${Math.floor(Math.random() * 250) + 50} mq in ${comune}, ${['ristrutturato', 'nuovo', 'da ristrutturare'][Math.floor(Math.random() * 3)]}. Zona ${['centrale', 'residenziale', 'periferica'][Math.floor(Math.random() * 3)]}.`,
+                    dataAsta: `2024-0${Math.floor(Math.random() * 9) + 1}-${Math.floor(Math.random() * 28) + 1}`,
+                    fonte: fonti[Math.floor(Math.random() * fonti.length)],
+                    link: `#annuncio-${i + 1}`,
+                    metriQuadrati: Math.floor(Math.random() * 300) + 50,
+                    locali: Math.floor(Math.random() * 6) + 1
                 });
             }
             
@@ -528,28 +525,24 @@
                 risultati = risultati.filter(r => r.prezzo <= prezzoMax);
             }
             
-            // Assicura almeno alcuni risultati
-            if (risultati.length === 0 && comuneCercato) {
-                // Crea almeno 3 risultati per il comune cercato
-                for (let i = 0; i < 3; i++) {
-                    const tipologia = state.filters.tipologia || tipologie[Math.floor(Math.random() * tipologie.length)];
-                    const prezzo = Math.floor(Math.random() * 500000) + 100000;
-                    
+            // Se non ci sono risultati, creane alcuni di default
+            if (risultati.length === 0) {
+                for (let i = 0; i < 5; i++) {
                     risultati.push({
                         id: 100 + i,
-                        tipologia: tipologia,
-                        indirizzo: `Via ${['Centrale', 'Garibaldi', 'Roma', 'Dante'][Math.floor(Math.random() * 4)]} ${Math.floor(Math.random() * 100) + 1}`,
-                        comune: comuneCercato,
-                        prezzo: prezzo,
-                        descrizione: `${tipologia} in ottime condizioni nel comune di ${comuneCercato}`,
-                        dataAsta: `2024-04-${Math.floor(Math.random() * 20) + 1}`,
+                        tipologia: state.filters.tipologia || 'Appartamento',
+                        indirizzo: `Via Esempio ${i + 1}`,
+                        comune: comuneCercato || 'Milano',
+                        prezzo: 200000 + (i * 50000),
+                        descrizione: `Esempio di immobile in ${comuneCercato || 'Milano'}`,
+                        dataAsta: '2024-04-15',
                         fonte: 'Demo System',
                         link: '#',
-                        metriQuadrati: Math.floor(Math.random() * 150) + 50,
-                        locali: Math.floor(Math.random() * 4) + 1
+                        metriQuadrati: 80 + (i * 20),
+                        locali: 2 + i
                     });
                 }
-                state.searchStatus = `✅ 3 annunci demo per ${comuneCercato}`;
+                state.searchStatus = `✅ 5 annunci demo`;
             } else {
                 state.searchStatus = `✅ Trovati ${risultati.length} annunci`;
             }
@@ -560,17 +553,19 @@
             state.clientMatches = [];
             if (risultati.length > 0 && state.clients.length > 0) {
                 state.clients.forEach(client => {
-                    const match = risultati.find(r => 
-                        client.comunes.some(c => 
-                            r.comune.toLowerCase().includes(c.toLowerCase())
-                        )
+                    const clientComuni = client.comunes.map(c => c.toLowerCase());
+                    const annunciMatch = risultati.filter(r => 
+                        clientComuni.includes(r.comune.toLowerCase())
                     );
-                    if (match) {
-                        state.clientMatches.push({
-                            id: Date.now(),
-                            clientName: client.name,
-                            annuncio: `${match.tipologia} - ${match.comune} (€${match.prezzo.toLocaleString()})`,
-                            data: new Date().toLocaleDateString('it-IT')
+                    
+                    if (annunciMatch.length > 0) {
+                        annunciMatch.slice(0, 2).forEach(annuncio => {
+                            state.clientMatches.push({
+                                id: Date.now() + Math.random(),
+                                clientName: client.name,
+                                annuncio: `${annuncio.tipologia} a ${annuncio.comune} (€${annuncio.prezzo.toLocaleString()})`,
+                                data: new Date().toLocaleDateString('it-IT')
+                            });
                         });
                     }
                 });
@@ -585,7 +580,6 @@
             const annuncio = state.searchResults.find(a => a.id === annuncioId);
             if (!annuncio) return;
             
-            // Qui potresti mostrare una modale per selezionare il cliente
             if (state.clients.length > 0) {
                 const clientNames = state.clients.map(c => c.name).join('\n');
                 const clientName = prompt(`Per quale cliente vuoi salvare questo annuncio?\n\nClienti disponibili:\n${clientNames}\n\nScrivi il nome esatto:`, state.clients[0].name);
@@ -643,7 +637,6 @@
         function deleteClient(clientId) {
             if (confirm('Sei sicuro di voler rimuovere questo cliente?')) {
                 state.clients = state.clients.filter(c => c.id !== clientId);
-                // Rimuovi anche i match associati
                 state.clientMatches = state.clientMatches.filter(m => {
                     const client = state.clients.find(c => c.name === m.clientName);
                     return client !== undefined;
@@ -685,10 +678,7 @@ ${annuncio.descrizione}
                 return;
             }
             
-            // Crea intestazione CSV
             const headers = ['Tipologia', 'Indirizzo', 'Comune', 'Prezzo', 'm²', 'Locali', 'Data Asta', 'Fonte', 'Link'];
-            
-            // Crea righe CSV
             const rows = state.searchResults.map(r => [
                 `"${r.tipologia}"`,
                 `"${r.indirizzo}"`,
@@ -701,13 +691,11 @@ ${annuncio.descrizione}
                 `"${r.link}"`
             ]);
             
-            // Combina tutto
             const csvContent = [
                 headers.join(','),
                 ...rows.map(row => row.join(','))
             ].join('\n');
             
-            // Crea e scarica file
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
