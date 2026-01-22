@@ -465,42 +465,136 @@
             render();
         }
 
-        async function performSearch() {
-            state.isLoading = true;
-            state.searchStatus = '🔍 Ricerca in corso su 7 portali...';
-            render();
+       async function performSearch() {
+    state.isLoading = true;
+    state.searchStatus = '🔍 Ricerca in corso su 7 portali...';
+    render();
+    
+    // Simula delay server (2-3 secondi)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Lista di comuni disponibili (ampliata)
+    const defaultComuni = [
+        'Milano', 'Roma', 'Torino', 'Napoli', 'Firenze', 'Bologna', 'Genova',
+        'Venezia', 'Verona', 'Padova', 'Bari', 'Palermo', 'Catania', 'Cagliari'
+    ];
+    
+    // Se l'utente inserisce un comune, lo aggiungiamo alla lista
+    const comuniList = state.filters.comune 
+        ? [state.filters.comune, ...defaultComuni]  // Il comune cercato + altri
+        : defaultComuni;
+    
+    const tipologie = ['Appartamento', 'Villa', 'Attico', 'Loft', 'Garage', 'Terreno'];
+    const fonti = ['Immobiliare.it', 'Casa.it', 'Subito.it', 'Idealista', 'Bakeca', 'Astegiudiziarie.it', 'PortaleAste.it'];
+    
+    // Genera sempre almeno 15 risultati
+    const numRisultati = 15;
+    state.searchResults = Array.from({length: numRisultati}, (_, i) => {
+        // Se c'è un comune specificato, usalo più frequentemente
+        const comuneScelto = state.filters.comune 
+            ? (Math.random() > 0.3 ? state.filters.comune : defaultComuni[Math.floor(Math.random() * defaultComuni.length)])
+            : comuniList[Math.floor(Math.random() * comuniList.length)];
+        
+        const tipologia = state.filters.tipologia || tipologie[Math.floor(Math.random() * tipologie.length)];
+        const prezzo = Math.floor(Math.random() * 700000) + 80000; // 80.000 - 780.000
+        const fonte = fonti[Math.floor(Math.random() * fonti.length)];
+        
+        return {
+            id: i + 1,
+            tipologia: tipologia,
+            indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante', 'Vittorio Emanuele'][Math.floor(Math.random() * 6)]} ${Math.floor(Math.random() * 150) + 1}`,
+            comune: comuneScelto,
+            prezzo: prezzo,
+            descrizione: `${tipologia} di ${Math.floor(Math.random() * 200) + 50} mq, ${['ristrutturato', 'nuovo', 'da ristrutturare', 'in ottime condizioni'][Math.floor(Math.random() * 4)]}. ${['Con giardino', 'Con box auto', 'In centro', 'Zona residenziale', 'Con terrazzo'][Math.floor(Math.random() * 5)]}.`,
+            dataAsta: `2024-0${Math.floor(Math.random() * 3) + 4}-${Math.floor(Math.random() * 28) + 1}`,
+            fonte: fonte,
+            link: `https://${fonte.toLowerCase().replace('.it', '')}.it/annuncio-${Math.floor(Math.random() * 10000)}`,
+            metriQuadrati: Math.floor(Math.random() * 200) + 50,
+            locali: Math.floor(Math.random() * 5) + 1
+        };
+    });
+    
+    // DEBUG: Mostra quanti risultati prima dei filtri
+    console.log(`Risultati generati: ${state.searchResults.length}`);
+    console.log(`Comune cercato: "${state.filters.comune}"`);
+    console.log(`Tipologia cercata: "${state.filters.tipologia}"`);
+    
+    // Applica filtri DOPO la generazione
+    let risultatiFiltrati = [...state.searchResults];
+    
+    if (state.filters.comune) {
+        const comuneCercato = state.filters.comune.toLowerCase();
+        risultatiFiltrati = risultatiFiltrati.filter(r => 
+            r.comune.toLowerCase().includes(comuneCercato)
+        );
+        console.log(`Dopo filtro comune: ${risultatiFiltrati.length}`);
+    }
+    
+    if (state.filters.tipologia) {
+        const tipologiaCercata = state.filters.tipologia.toLowerCase();
+        risultatiFiltrati = risultatiFiltrati.filter(r => 
+            r.tipologia.toLowerCase().includes(tipologiaCercata)
+        );
+        console.log(`Dopo filtro tipologia: ${risultatiFiltrati.length}`);
+    }
+    
+    if (state.filters.prezzoMin) {
+        const prezzoMin = parseInt(state.filters.prezzoMin);
+        risultatiFiltrati = risultatiFiltrati.filter(r => r.prezzo >= prezzoMin);
+        console.log(`Dopo filtro prezzoMin: ${risultatiFiltrati.length}`);
+    }
+    
+    if (state.filters.prezzoMax) {
+        const prezzoMax = parseInt(state.filters.prezzoMax);
+        risultatiFiltrati = risultatiFiltrati.filter(r => r.prezzo <= prezzoMax);
+        console.log(`Dopo filtro prezzoMax: ${risultatiFiltrati.length}`);
+    }
+    
+    // Se non ci sono risultati dopo i filtri, mostra almeno alcuni risultati
+    if (risultatiFiltrati.length === 0) {
+        console.log("Nessun risultato dopo filtri, mostro alcuni risultati generici");
+        // Prendi i primi 5 risultati generati
+        risultatiFiltrati = state.searchResults.slice(0, 5);
+        // Modifica alcuni per matchare i filtri
+        if (state.filters.comune) {
+            risultatiFiltrati.forEach(r => r.comune = state.filters.comune);
+        }
+        if (state.filters.tipologia) {
+            risultatiFiltrati.forEach(r => r.tipologia = state.filters.tipologia);
+        }
+        state.searchStatus = `⚠️ Nessun risultato esatto. Mostro ${risultatiFiltrati.length} annunci simili`;
+    } else {
+        state.searchResults = risultatiFiltrati;
+        state.searchStatus = `✅ Trovati ${state.searchResults.length} annunci`;
+    }
+    
+    // Genera match con clienti
+    state.clientMatches = [];
+    if (state.searchResults.length > 0 && state.clients.length > 0) {
+        state.clients.forEach(client => {
+            // Trova annunci nel comune del cliente
+            const annunciCompatibili = state.searchResults.filter(r => 
+                client.comunes.some(comuneCliente => 
+                    r.comune.toLowerCase().includes(comuneCliente.toLowerCase())
+                )
+            );
             
-            // Simula delay server (2-3 secondi)
-            await new Promise(resolve => setTimeout(resolve, 2500));
-            
-            // Genera dati mock più realistici
-            const comuniList = state.filters.comune 
-                ? [state.filters.comune] 
-                : ['Milano', 'Roma', 'Torino', 'Napoli', 'Firenze', 'Bologna', 'Genova'];
-            
-            const tipologie = ['Appartamento', 'Villa', 'Attico', 'Loft', 'Garage', 'Terreno'];
-            const fonti = ['Immobiliare.it', 'Casa.it', 'Subito.it', 'Idealista', 'Bakeca', 'Astegiudiziarie.it', 'PortaleAste.it'];
-            
-            // Genera 15-20 risultati casuali
-            state.searchResults = Array.from({length: Math.floor(Math.random() * 15) + 10}, (_, i) => {
-                const comune = comuniList[Math.floor(Math.random() * comuniList.length)];
-                const tipologia = state.filters.tipologia || tipologie[Math.floor(Math.random() * tipologie.length)];
-                const prezzo = Math.floor(Math.random() * 800000) + 50000;
-                const fonte = fonti[Math.floor(Math.random() * fonti.length)];
-                
-                return {
-                    id: i + 1,
-                    tipologia: tipologia,
-                    indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante'][Math.floor(Math.random() * 5)]} ${Math.floor(Math.random() * 100) + 1}`,
-                    comune: comune,
-                    prezzo: prezzo,
-                    descrizione: `${tipologia} di ${Math.floor(Math.random() * 200) + 50} mq, ${['ristrutturato', 'nuovo', 'da ristrutturare', 'in ottime condizioni'][Math.floor(Math.random() * 4)]}. ${['Con giardino', 'Con box auto', 'In centro', 'Zona residenziale'][Math.floor(Math.random() * 4)]}.`,
-                    dataAsta: `2024-0${Math.floor(Math.random() * 3) + 4}-${Math.floor(Math.random() * 28) + 1}`,
-                    fonte: fonte,
-                    link: `https://${fonte.toLowerCase().replace('.it', '')}.it/annuncio-${Math.floor(Math.random() * 10000)}`,
-                    metriQuadrati: Math.floor(Math.random() * 200) + 50,
-                    locali: Math.floor(Math.random() * 5) + 1
-                };
+            if (annunciCompatibili.length > 0) {
+                annunciCompatibili.slice(0, 2).forEach(annuncio => {
+                    state.clientMatches.push({
+                        id: Date.now() + Math.random(),
+                        clientName: client.name,
+                        annuncio: `${annuncio.tipologia} - ${annuncio.comune} (€${annuncio.prezzo.toLocaleString()})`,
+                        data: new Date().toLocaleDateString('it-IT')
+                    });
+                });
+            }
+        });
+    }
+    
+    state.isLoading = false;
+    render();
+}
             });
             
             // Applica filtri se presenti
