@@ -299,61 +299,43 @@
             render();
         }
 
-        async function performSearch() {
-            state.isLoading = true;
-            state.searchStatus = '🔌 Connessione al server...';
-            render();
-
-            try {
-                console.log('🔍 Connessione a:', `${API_URL}/api/health`);
-                
-                state.searchStatus = '⏳ Risveglio server (30-40 secondi)...';
-                render();
-
-                const healthCheck = await fetch(`${API_URL}/api/health`);
-                
-                if (!healthCheck.ok) {
-                    throw new Error('Server non raggiungibile');
-                }
-
-                const healthData = await healthCheck.json();
-                console.log('✅ Server attivo:', healthData);
-
-                state.searchStatus = '✅ Server connesso! Inizio ricerca...';
-                render();
-
-                const comuni = state.filters.comune ? [state.filters.comune] : [];
-                
-                const response = await fetch(`${API_URL}/api/scrape-all`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ comuni })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Errore server: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log('📊 Dati ricevuti:', data);
-
-                if (data.success) {
-                    state.searchResults = data.results || [];
-                    const successCount = data.siteStatuses.filter(s => s.status === 'OK').length;
-                    state.searchStatus = `✅ Completato: ${successCount} siti, ${state.searchResults.length} annunci`;
-                    
-                    alert(`RICERCA COMPLETATA!\n\n✅ Siti funzionanti: ${successCount}\n📊 Annunci trovati: ${state.searchResults.length}`);
-                }
-
-            } catch (error) {
-                console.error('❌ Errore:', error);
-                state.searchStatus = '';
-                alert(`Errore: ${error.message}\n\nVerifica che il server sia attivo su Render.com`);
-            }
-
-            state.isLoading = false;
-            render();
+       // Sostituisci la funzione performSearch() con questa versione mock:
+async function performSearch() {
+    state.isLoading = true;
+    state.searchStatus = '🔍 Ricerca in corso...';
+    render();
+    
+    // Simula delay server
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Dati di esempio
+    state.searchResults = [
+        {
+            tipologia: "Appartamento",
+            indirizzo: "Via Garibaldi 45",
+            comune: state.filters.comune || "Milano",
+            prezzo: 450000,
+            descrizione: "Appartamento di prestigio in zona centrale, 120 mq con giardino",
+            dataAsta: "2024-04-15",
+            fonte: "Immobiliare.it",
+            link: "https://www.immobiliare.it/annuncio-123"
+        },
+        {
+            tipologia: "Villa",
+            indirizzo: "Via Monte Bianco 12",
+            comune: state.filters.comune || "Torino",
+            prezzo: 850000,
+            descrizione: "Villa indipendente con piscina, 250 mq su due livelli",
+            dataAsta: "2024-04-20",
+            fonte: "Casa.it",
+            link: "https://www.casa.it/annuncio-456"
         }
+    ];
+    
+    state.isLoading = false;
+    state.searchStatus = `✅ Trovati ${state.searchResults.length} annunci (demo)`;
+    render();
+}
 
         // Inizializza app
         render();
