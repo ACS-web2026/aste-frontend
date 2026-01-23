@@ -134,10 +134,10 @@
                         TELEFONO: "3270591632",
                         MAIL: "baljitkaurtoor72@gmail.com",
                         ATTIVI: "SI",
-                        ZONE: ["7"], // Array di zone
-                        BUDGET_FASCIA: "under50", // Fascia budget
+                        ZONE: ["7"],
+                        BUDGET_FASCIA: "under50",
                         NOTE: "Interessato a piccoli immobili nella bassa bresciana",
-                        AREA_INTERESSE: "Barbariga" // Mantenuto per compatibilità
+                        AREA_INTERESSE: "Barbariga"
                     },
                     {
                         COGNOME: "De Donno",
@@ -146,22 +146,10 @@
                         TELEFONO: "3383830276",
                         MAIL: "",
                         ATTIVI: "SI",
-                        ZONE: ["1", "7"], // Multipla zona
+                        ZONE: ["1", "7"],
                         BUDGET_FASCIA: "under100",
                         NOTE: "70k da mettere a reddito, cerca soluzioni in città e hinterland",
                         AREA_INTERESSE: "Brescia e altro"
-                    },
-                    {
-                        COGNOME: "Pejcic",
-                        NOME: "Milan",
-                        CUSTOMER_CODE: "9",
-                        TELEFONO: "3200481395",
-                        MAIL: "milan11041976@gmail.com",
-                        ATTIVI: "SI",
-                        ZONE: ["1", "2", "8"], // Tre zone
-                        BUDGET_FASCIA: "under250",
-                        NOTE: "Preferisce zona centrale o panoramica, possibilità franciacorta",
-                        AREA_INTERESSE: "Brescia"
                     }
                 ];
                 saveData();
@@ -450,14 +438,6 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         ${state.searchResults.map(r => renderResultCard(r)).join('')}
                     </div>
-                    
-                    ${state.searchResults.length >= 15 ? `
-                    <div class="mt-8 text-center">
-                        <button onclick="loadMoreResults()" class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
-                            📥 Carica altri annunci
-                        </button>
-                    </div>
-                    ` : ''}
                 </div>
                 ` : !state.isLoading ? `
                 <div class="bg-white rounded-2xl shadow-xl p-12 text-center border border-gray-100">
@@ -468,16 +448,6 @@
                     <p class="text-gray-600 max-w-md mx-auto mb-8">
                         Imposta i filtri di ricerca e clicca "Avvia Ricerca" per trovare annunci di aste immobiliari dai principali portali.
                     </p>
-                    <div class="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg max-w-md mx-auto">
-                        <p class="font-medium mb-1">Funzionalità incluse:</p>
-                        <ul class="text-left space-y-1">
-                            <li>• Ricerca su 7 portali simultaneamente</li>
-                            <li>• Deduplicazione automatica degli annunci</li>
-                            <li>• Mappa interattiva con localizzazione</li>
-                            <li>• Esportazione PDF e CSV</li>
-                            <li>• Suggerimenti clienti compatibili</li>
-                        </ul>
-                    </div>
                 </div>
                 ` : ''}
             </div>
@@ -605,22 +575,6 @@
                             </tbody>
                         </table>
                     </div>
-                    
-                    ${filteredClients.length > 0 ? `
-                    <div class="px-6 py-4 border-t bg-gray-50 flex justify-between items-center">
-                        <p class="text-sm text-gray-600">
-                            Mostrati ${filteredClients.length} di ${state.clients.length} clienti
-                        </p>
-                        <div class="text-xs text-gray-500">
-                            ${Object.entries(zoneInfo).slice(0, 4).map(([code, info]) => `
-                                <span class="inline-flex items-center mr-2">
-                                    <span class="w-3 h-3 rounded-full mr-1 ${getZonaColorClass(code)}"></span>
-                                    ${code}
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
                 </div>
 
                 <!-- Legenda Zone -->
@@ -717,48 +671,6 @@
                             <strong>Nota:</strong> Zone e budget saranno impostati manualmente dopo l'importazione
                         </p>
                     </div>
-                    
-                    <!-- Dati importati -->
-                    ${state.importedData ? `
-                    <div class="mt-8">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold text-gray-800">Anteprima dati importati</h3>
-                            <div class="flex gap-2">
-                                <button onclick="confirmImport()" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                                    ✅ Conferma Import
-                                </button>
-                                <button onclick="clearImport()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                                    ❌ Annulla
-                                </button>
-                            </div>
-                        </div>
-                        <div class="overflow-x-auto border rounded-lg">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        ${Object.keys(state.importedData[0] || {}).map(col => `
-                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">${col}</th>
-                                        `).join('')}
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    ${state.importedData.slice(0, 5).map(row => `
-                                        <tr class="hover:bg-gray-50">
-                                            ${Object.values(row).map(val => `
-                                                <td class="px-4 py-3 text-sm">${val || ''}</td>
-                                            `).join('')}
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                            ${state.importedData.length > 5 ? `
-                                <div class="px-4 py-3 bg-gray-50 text-sm text-gray-500 border-t">
-                                    + ${state.importedData.length - 5} altre righe...
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    ` : ''}
                 </div>
             </div>
             `;
@@ -769,12 +681,11 @@
             
             return `
             <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden group">
-                <!-- Header -->
                 <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 border-b border-gray-200">
                     <div class="flex justify-between items-start gap-4">
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-2">
-                                <span class="text-xl">${getPropertyIcon(result.tipologia)}</span>
+                                <span class="text-xl">🏠</span>
                                 <h3 class="text-xl font-bold text-gray-800">${result.tipologia}</h3>
                             </div>
                             <p class="text-gray-600 flex items-center gap-2">
@@ -789,27 +700,8 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Fonti -->
-                    ${result.sources && result.sources.length > 0 ? `
-                    <div class="mt-4 pt-4 border-t border-gray-200">
-                        <p class="text-sm font-medium text-gray-700 mb-2">Disponibile su:</p>
-                        <div class="flex flex-wrap gap-1.5">
-                            ${result.sources.map((source, idx) => `
-                                <button 
-                                    onclick="openSourceLink('${result.id}', ${idx})"
-                                    class="${getSourceColorClass(source.site)} source-badge hover:scale-105 transition-transform"
-                                    title="Apri ${source.site}"
-                                >
-                                    ${getSourceIcon(source.site)} ${source.site}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
                 </div>
                 
-                <!-- Contenuto -->
                 <div class="p-5">
                     <div class="grid grid-cols-2 gap-3 mb-5">
                         <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
@@ -832,30 +724,16 @@
                     
                     <p class="text-gray-600 mb-5 line-clamp-2">${result.descrizione}</p>
                     
-                    <!-- Bottoni Azione -->
-                    <div class="grid grid-cols-3 gap-2">
-                        <button 
-                            onclick="exportAnnuncioToPDF(${result.id})"
-                            class="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn"
-                        >
-                            <span class="group-hover/btn:scale-110 transition-transform">📄</span>
-                            <span class="text-sm font-medium">PDF</span>
-                        </button>
-                        
-                        <button 
-                            onclick="showClientSuggestions(${result.id})"
-                            class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn"
-                        >
-                            <span class="group-hover/btn:scale-110 transition-transform">👥</span>
-                            <span class="text-sm font-medium">Clienti</span>
-                        </button>
-                        
-                        <button 
-                            onclick="showAnnuncioDetails(${result.id})"
-                            class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn"
-                        >
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="showAnnuncioDetails(${result.id})" 
+                                class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
                             <span class="group-hover/btn:scale-110 transition-transform">📊</span>
                             <span class="text-sm font-medium">Dettagli</span>
+                        </button>
+                        <button onclick="showClientSuggestions(${result.id})" 
+                                class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
+                            <span class="group-hover/btn:scale-110 transition-transform">👥</span>
+                            <span class="text-sm font-medium">Clienti</span>
                         </button>
                     </div>
                 </div>
@@ -964,25 +842,6 @@
             return `bg-${siteObj.color}-100 text-${siteObj.color}-800 hover:bg-${siteObj.color}-200`;
         }
 
-        function getSourceIcon(site) {
-            const siteObj = SITES.find(s => s.name === site);
-            return siteObj ? siteObj.icon : '🔗';
-        }
-
-        function getPropertyIcon(tipologia) {
-            const icons = {
-                'Appartamento': '🏠',
-                'Villa': '🏡',
-                'Attico': '🏢',
-                'Loft': '🏭',
-                'Garage': '🚗',
-                'Terreno': '🌳',
-                'Capannone': '🏭',
-                'Ufficio': '🏢'
-            };
-            return icons[tipologia] || '🏘️';
-        }
-
         function getClientiAttivi() {
             return state.clients.filter(c => c.ATTIVI === 'SI').length;
         }
@@ -997,6 +856,12 @@
 
         function getClientiConNote() {
             return state.clients.filter(c => c.NOTE && c.NOTE.trim().length > 0).length;
+        }
+
+        function getUltimoCodice() {
+            if (state.clients.length === 0) return '0';
+            const codici = state.clients.map(c => parseInt(c.CUSTOMER_CODE) || 0);
+            return Math.max(...codici);
         }
 
         function getFilteredClients() {
@@ -1033,11 +898,10 @@
             return filtered;
         }
 
-        // ========== GESTIONE CLIENTI (MODIFICHE) ==========
+        // ========== GESTIONE CLIENTI ==========
         function showAddClientModal() {
             const modalContent = `
                 <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4">
-                    <!-- Header -->
                     <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
                         <div class="flex justify-between items-center">
                             <div>
@@ -1050,10 +914,8 @@
                         </div>
                     </div>
                     
-                    <!-- Form -->
                     <div class="p-6 overflow-y-auto max-h-[60vh]">
                         <div class="space-y-6">
-                            <!-- Informazioni base -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">COGNOME *</label>
@@ -1080,7 +942,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Contatti -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">TELEFONO</label>
@@ -1094,14 +955,13 @@
                                 </div>
                             </div>
                             
-                            <!-- SELEZIONE ZONE (8 bottoni) -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-3">ZONE DI INTERESSE *</label>
                                 <p class="text-xs text-gray-500 mb-3">Clicca per selezionare/deselezionare (puoi selezionare più zone)</p>
                                 <div class="grid grid-cols-4 gap-2" id="zone-selection">
                                     ${Object.entries(zoneInfo).map(([code, info]) => `
                                         <button type="button" 
-                                                class="zone-btn p-3 rounded-lg border-2 border-gray-200 flex flex-col items-center justify-center hover:border-${info.colore}-300 transition-all"
+                                                class="zone-btn p-3 rounded-lg border-2 border-gray-200 flex flex-col items-center justify-center hover:border-gray-300 transition-all"
                                                 data-zone="${code}"
                                                 onclick="toggleZoneSelection('${code}', this)">
                                             <span class="w-8 h-8 rounded-full ${getZonaColorClass(code, 'bg')} ${getZonaColorClass(code, 'text')} flex items-center justify-center font-bold text-lg mb-1 border ${getZonaColorClass(code, 'border')}">
@@ -1115,7 +975,6 @@
                                 <input type="hidden" id="selected-zones" value="">
                             </div>
                             
-                            <!-- FASCE DI BUDGET -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-3">FASCIA DI BUDGET *</label>
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2" id="budget-selection">
@@ -1132,19 +991,16 @@
                                 <input type="hidden" id="selected-budget" value="">
                             </div>
                             
-                            <!-- NOTE -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">NOTE</label>
                                 <textarea id="add-note" 
                                           rows="3"
                                           placeholder="Note aggiuntive sul cliente..."
                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg"></textarea>
-                                <p class="text-xs text-gray-500 mt-1">Campo libero per appunti e informazioni aggiuntive</p>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Footer -->
                     <div class="border-t border-gray-200 p-6 bg-gray-50">
                         <div class="flex justify-between">
                             <button onclick="closeModal()" 
@@ -1183,7 +1039,6 @@
                     
                     <div class="p-6 overflow-y-auto max-h-[60vh]">
                         <div class="space-y-6">
-                            <!-- Informazioni base -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">COGNOME *</label>
@@ -1204,7 +1059,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Contatti -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">TELEFONO</label>
@@ -1218,7 +1072,6 @@
                                 </div>
                             </div>
                             
-                            <!-- SELEZIONE ZONE -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-3">ZONE DI INTERESSE *</label>
                                 <p class="text-xs text-gray-500 mb-3">Clicca per selezionare/deselezionare</p>
@@ -1227,7 +1080,7 @@
                                         const isSelected = cliente.ZONE && cliente.ZONE.includes(code);
                                         return `
                                             <button type="button" 
-                                                    class="zone-btn p-3 rounded-lg border-2 ${isSelected ? `border-${info.colore}-500 ${getZonaColorClass(code, 'bg')}` : 'border-gray-200'} flex flex-col items-center justify-center hover:border-${info.colore}-300 transition-all"
+                                                    class="zone-btn p-3 rounded-lg border-2 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'} flex flex-col items-center justify-center hover:border-gray-300 transition-all"
                                                     data-zone="${code}"
                                                     onclick="toggleZoneSelection('${code}', this, true)">
                                                 <span class="w-8 h-8 rounded-full ${getZonaColorClass(code, 'bg')} ${getZonaColorClass(code, 'text')} flex items-center justify-center font-bold text-lg mb-1 border ${getZonaColorClass(code, 'border')}">
@@ -1243,7 +1096,6 @@
                                 <input type="hidden" id="edit-selected-zones" value="${cliente.ZONE ? cliente.ZONE.join(',') : ''}">
                             </div>
                             
-                            <!-- FASCE DI BUDGET -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-3">FASCIA DI BUDGET *</label>
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2" id="edit-budget-selection">
@@ -1264,7 +1116,6 @@
                                 <input type="hidden" id="edit-selected-budget" value="${cliente.BUDGET_FASCIA || ''}">
                             </div>
                             
-                            <!-- NOTE -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">NOTE</label>
                                 <textarea id="edit-note" 
@@ -1306,17 +1157,15 @@
             if (selectedZones.includes(zone)) {
                 // Rimuovi zona
                 selectedZones = selectedZones.filter(z => z !== zone);
-                buttonElement.classList.remove('selected', `border-${zoneInfo[zone].colore}-500`);
+                buttonElement.classList.remove('border-blue-500', 'bg-blue-50');
                 buttonElement.classList.add('border-gray-200');
-                // Rimuovi il segno di spunta
                 const checkmark = buttonElement.querySelector('.absolute');
                 if (checkmark) checkmark.remove();
             } else {
                 // Aggiungi zona
                 selectedZones.push(zone);
-                buttonElement.classList.add('selected', `border-${zoneInfo[zone].colore}-500`, getZonaColorClass(zone, 'bg'));
+                buttonElement.classList.add('border-blue-500', 'bg-blue-50');
                 buttonElement.classList.remove('border-gray-200');
-                // Aggiungi segno di spunta
                 if (!buttonElement.querySelector('.absolute')) {
                     const checkmark = document.createElement('span');
                     checkmark.className = 'absolute top-1 right-1 text-green-500';
@@ -1334,12 +1183,11 @@
             // Rimuovi selezione da tutti i pulsanti
             const allButtons = document.querySelectorAll(isEdit ? '#edit-budget-selection button' : '#budget-selection button');
             allButtons.forEach(btn => {
-                btn.classList.remove('selected', 'border-blue-500', 'bg-blue-50');
+                btn.classList.remove('border-blue-500', 'bg-blue-50');
                 btn.classList.add('border-gray-200');
                 const checkmark = btn.querySelector('.absolute');
                 if (checkmark) checkmark.remove();
                 
-                // Ripristina colori testo
                 const textSpan = btn.querySelector('.text-lg');
                 const subSpan = btn.querySelector('.text-xs');
                 if (textSpan) textSpan.className = 'text-lg font-bold text-gray-700 mb-1';
@@ -1347,16 +1195,14 @@
             });
             
             // Seleziona il pulsante cliccato
-            buttonElement.classList.add('selected', 'border-blue-500', 'bg-blue-50');
+            buttonElement.classList.add('border-blue-500', 'bg-blue-50');
             buttonElement.classList.remove('border-gray-200');
             
-            // Aggiungi segno di spunta
             const checkmark = document.createElement('span');
             checkmark.className = 'absolute top-1 right-1 text-blue-500';
             checkmark.textContent = '✓';
             buttonElement.appendChild(checkmark);
             
-            // Cambia colori testo
             const textSpan = buttonElement.querySelector('.text-lg');
             const subSpan = buttonElement.querySelector('.text-xs');
             if (textSpan) textSpan.className = 'text-lg font-bold text-blue-700 mb-1';
@@ -1389,16 +1235,14 @@
                 ZONE: selectedZones,
                 BUDGET_FASCIA: selectedBudget,
                 NOTE: document.getElementById('add-note').value.trim(),
-                AREA_INTERESSE: selectedZones.map(z => `Zona ${z}`).join(', ') // Per compatibilità
+                AREA_INTERESSE: selectedZones.map(z => `Zona ${z}`).join(', ')
             };
             
-            // Validazione
             if (!cliente.COGNOME || !cliente.NOME || !cliente.CUSTOMER_CODE) {
                 alert('Compila i campi obbligatori: Cognome, Nome e Codice');
                 return;
             }
             
-            // Controlla duplicato codice
             if (state.clients.some(c => c.CUSTOMER_CODE === cliente.CUSTOMER_CODE)) {
                 alert(`Il codice cliente ${cliente.CUSTOMER_CODE} è già utilizzato.`);
                 return;
@@ -1465,16 +1309,545 @@
             alert('✅ Cliente eliminato!');
         }
 
-        // Funzioni rimanenti (ricerca, importazione, ecc.) rimangono le stesse...
-        // [Qui inseriresti il resto del codice JavaScript che non è stato modificato]
-        // Per brevità, omesso ma deve includere: handleLogin, performSearch, initMap, export functions, ecc.
+        // ========== GESTIONE MODALI ==========
+        function showModal(content) {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = `
+                <div class="modal-overlay">
+                    ${content}
+                </div>
+            `;
+            
+            setTimeout(() => {
+                const overlay = modalContainer.querySelector('.modal-overlay');
+                if (overlay) {
+                    overlay.onclick = (e) => {
+                        if (e.target === overlay) closeModal();
+                    };
+                }
+                document.addEventListener('keydown', handleEscKey);
+            }, 100);
+        }
 
-        // Inizializza app
+        function closeModal() {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = '';
+            document.removeEventListener('keydown', handleEscKey);
+        }
+
+        function handleEscKey(e) {
+            if (e.key === 'Escape') closeModal();
+        }
+
+        // ========== EVENT LISTENERS ==========
+        function attachEventListeners() {
+            // Login
+            const loginBtn = document.getElementById('login-btn');
+            const passwordInput = document.getElementById('password-input');
+            const togglePassword = document.getElementById('toggle-password');
+            
+            if (loginBtn) loginBtn.onclick = handleLogin;
+            if (passwordInput) {
+                passwordInput.oninput = (e) => state.password = e.target.value;
+                passwordInput.onkeypress = (e) => { if (e.key === 'Enter') handleLogin(); };
+            }
+            if (togglePassword) {
+                togglePassword.onclick = () => {
+                    state.showPassword = !state.showPassword;
+                    render();
+                };
+            }
+            
+            // Main app
+            const logoutBtn = document.getElementById('logout-btn');
+            const tabSearch = document.getElementById('tab-search');
+            const tabClients = document.getElementById('tab-clients');
+            const tabImport = document.getElementById('tab-import');
+            const searchBtn = document.getElementById('search-btn');
+            
+            if (logoutBtn) logoutBtn.onclick = handleLogout;
+            if (tabSearch) tabSearch.onclick = () => { 
+                state.activeTab = 'search'; 
+                state.showClientSuggestions = false;
+                state.selectedAnnuncio = null;
+                render(); 
+            };
+            if (tabClients) tabClients.onclick = () => { 
+                state.activeTab = 'clients'; 
+                state.showClientSuggestions = false;
+                state.selectedAnnuncio = null;
+                render(); 
+            };
+            if (tabImport) tabImport.onclick = () => { 
+                state.activeTab = 'import'; 
+                state.showClientSuggestions = false;
+                state.selectedAnnuncio = null;
+                render(); 
+            };
+            if (searchBtn) searchBtn.onclick = performSearch;
+            
+            // Filters ricerca
+            const filterComune = document.getElementById('filter-comune');
+            const filterTipologia = document.getElementById('filter-tipologia');
+            const filterPrezzoMin = document.getElementById('filter-prezzo-min');
+            const filterPrezzoMax = document.getElementById('filter-prezzo-max');
+            
+            if (filterComune) filterComune.oninput = (e) => { state.filters.comune = e.target.value; };
+            if (filterTipologia) filterTipologia.onchange = (e) => { state.filters.tipologia = e.target.value; };
+            if (filterPrezzoMin) filterPrezzoMin.oninput = (e) => { state.filters.prezzoMin = e.target.value; };
+            if (filterPrezzoMax) filterPrezzoMax.oninput = (e) => { state.filters.prezzoMax = e.target.value; };
+            
+            // Filtri clienti
+            const filterZone = document.getElementById('filter-zone');
+            const filterBudget = document.getElementById('filter-budget');
+            const filterAttivo = document.getElementById('filter-attivo');
+            const filterSearch = document.getElementById('filter-search');
+            
+            if (filterZone) filterZone.onchange = (e) => { 
+                state.clientFilters.zone = e.target.value ? [e.target.value] : [];
+                render();
+            };
+            if (filterBudget) filterBudget.onchange = (e) => { 
+                state.clientFilters.budget = e.target.value;
+                render();
+            };
+            if (filterAttivo) filterAttivo.onchange = (e) => { 
+                state.clientFilters.attivo = e.target.value;
+                render();
+            };
+            if (filterSearch) {
+                filterSearch.oninput = debounce((e) => {
+                    state.clientFilters.search = e.target.value;
+                    render();
+                }, 300);
+            }
+        }
+
+        function handleLogin() {
+            if (state.password === MASTER_PASSWORD) {
+                state.isAuthenticated = true;
+                state.password = '';
+                loadInitialData();
+                render();
+            } else {
+                alert('Password non corretta. Usa: aste2025');
+            }
+        }
+
+        function handleLogout() {
+            state.isAuthenticated = false;
+            state.searchResults = [];
+            state.showClientSuggestions = false;
+            state.selectedAnnuncio = null;
+            render();
+        }
+
+        // ========== RICERCA ASTE ==========
+        function performSearch() {
+            state.isLoading = true;
+            state.searchStatus = 'Ricerca in corso su 7 portali...';
+            render();
+            
+            setTimeout(() => {
+                const rawResults = generateMockResults();
+                const deduplicatedResults = deduplicateResults(rawResults);
+                
+                state.searchResults = deduplicatedResults;
+                state.isLoading = false;
+                state.searchStatus = `✅ Trovati ${deduplicatedResults.length} annunci univoci`;
+                render();
+                
+                initMap();
+            }, 1500);
+        }
+
+        function generateMockResults() {
+            const comuneFiltro = state.filters.comune || '';
+            const tipologiaFiltro = state.filters.tipologia || '';
+            const prezzoMin = parseInt(state.filters.prezzoMin) || 0;
+            const prezzoMax = parseInt(state.filters.prezzoMax) || 10000000;
+            
+            const comuni = comuneFiltro ? [comuneFiltro] : Object.keys(coordinateComuni);
+            const tipologie = tipologiaFiltro ? [tipologiaFiltro] : ['Appartamento', 'Villa', 'Attico', 'Garage', 'Terreno', 'Capannone', 'Ufficio'];
+            
+            const caratteristiche = [
+                'Con giardino privato', 'Box auto incluso', 'In centro storico', 
+                'Zona residenziale tranquilla', 'Vista panoramica', 'Con piscina',
+                'A due passi dal mare', 'Con ampio terrazzo', 'Recentemente ristrutturato',
+                'Classe energetica A4', 'Con cantina', 'Doppi servizi', 'Impianto fotovoltaico'
+            ];
+            
+            const condizioni = [
+                'Ottime condizioni', 'Da ristrutturare completamente', 'Nuovo di costruzione',
+                'Parzialmente ristrutturato', 'Libero immediatamente', 'In classe A',
+                'Con certificazione energetica', 'Pronto per abitare'
+            ];
+            
+            const results = [];
+            const numResults = Math.floor(Math.random() * 10) + 5;
+            
+            for (let i = 0; i < numResults; i++) {
+                const comune = comuni[Math.floor(Math.random() * comuni.length)];
+                const tipologia = tipologie[Math.floor(Math.random() * tipologie.length)];
+                const prezzo = Math.floor(Math.random() * (prezzoMax - prezzoMin)) + prezzoMin;
+                
+                if (prezzo < prezzoMin || prezzo > prezzoMax) continue;
+                
+                results.push({
+                    id: i + 1,
+                    tipologia: tipologia,
+                    indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante', 'Vittorio Emanuele'][Math.floor(Math.random() * 6)]} ${Math.floor(Math.random() * 200) + 1}`,
+                    comune: comune,
+                    prezzo: prezzo,
+                    descrizione: `${tipologia} di ${Math.floor(Math.random() * 300) + 50} mq a ${comune}, ${condizioni[Math.floor(Math.random() * condizioni.length)]}. ${caratteristiche[Math.floor(Math.random() * caratteristiche.length)]}.`,
+                    dataAsta: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+                    metriQuadrati: Math.floor(Math.random() * 300) + 50,
+                    locali: Math.floor(Math.random() * 6) + 1,
+                    coordinate: coordinateComuni[comune] || MAP_CENTER
+                });
+            }
+            
+            return results;
+        }
+
+        function deduplicateResults(results) {
+            const seen = new Set();
+            const deduplicated = [];
+            
+            for (const result of results) {
+                const key = `${result.comune}_${result.indirizzo.split(' ')[0]}_${Math.floor(result.prezzo / 10000)}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    deduplicated.push(result);
+                }
+            }
+            
+            return deduplicated;
+        }
+
+        function initMap() {
+            if (map) map.remove();
+            
+            map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            state.searchResults.forEach(result => {
+                if (result.coordinate) {
+                    const marker = L.marker(result.coordinate).addTo(map);
+                    marker.bindPopup(`
+                        <div style="min-width: 200px;">
+                            <strong>${result.tipologia}</strong><br>
+                            <small>${result.indirizzo}, ${result.comune}</small><br>
+                            <strong>€${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</strong>
+                        </div>
+                    `);
+                }
+            });
+            
+            if (state.searchResults.length > 0) {
+                const bounds = L.latLngBounds(state.searchResults.map(r => r.coordinate).filter(c => c));
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+
+        function showAnnuncioDetails(annuncioId) {
+            const annuncio = state.searchResults.find(a => a.id === annuncioId);
+            if (!annuncio) return;
+            
+            const details = `
+📋 <strong>DETTAGLI COMPLETI ANNUNCIO</strong>
+
+🏠 <strong>Tipologia:</strong> ${annuncio.tipologia}
+📍 <strong>Indirizzo:</strong> ${annuncio.indirizzo}, ${annuncio.comune}
+💰 <strong>Prezzo base d'asta:</strong> €${annuncio.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}
+📏 <strong>Metratura:</strong> ${annuncio.metriQuadrati} m²
+🚪 <strong>Locali:</strong> ${annuncio.locali}
+🏷️ <strong>Prezzo al m²:</strong> €${(annuncio.prezzo / annuncio.metriQuadrati).toFixed(2)}
+📅 <strong>Data asta:</strong> ${annuncio.dataAsta}
+
+📝 <strong>Descrizione:</strong>
+${annuncio.descrizione}
+            `;
+            
+            alert(details);
+        }
+
+        function showClientSuggestions(annuncioId) {
+            const annuncio = state.searchResults.find(a => a.id === annuncioId);
+            if (!annuncio) return;
+            
+            // Converti clienti per match
+            const clientsForMatch = state.clients.map(client => ({
+                id: client.CUSTOMER_CODE,
+                name: `${client.COGNOME} ${client.NOME}`,
+                email: client.MAIL,
+                preferenze: client.ZONE ? client.ZONE.map(z => `Zona ${z}`) : [],
+                note: client.NOTE || ''
+            }));
+            
+            const matchedClients = clientsForMatch.filter(client => 
+                client.preferenze.some(p => p.includes(annuncio.comune) || annuncio.comune.includes(p.replace('Zona ', '')))
+            );
+            
+            if (matchedClients.length === 0) {
+                alert('Nessun cliente compatibile trovato per questo annuncio.');
+                return;
+            }
+            
+            let message = `Clienti compatibili per "${annuncio.tipologia} a ${annuncio.comune}":\n\n`;
+            matchedClients.forEach((client, idx) => {
+                message += `${idx + 1}. ${client.name}\n   Email: ${client.email || 'Nessuna'}\n   Note: ${client.note || 'Nessuna'}\n\n`;
+            });
+            
+            alert(message);
+        }
+
+        function renderModal() {
+            // Implementazione semplice per ora
+            const modalContainer = document.getElementById('modal-container');
+            if (!state.showClientSuggestions) {
+                modalContainer.innerHTML = '';
+            }
+        }
+
+        // ========== IMPORT/EXPORT ==========
+        function showImportModal() {
+            state.activeTab = 'import';
+            render();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) processExcelFile(file);
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropzone = event.currentTarget;
+            dropzone.classList.remove('border-indigo-400', 'bg-indigo-50');
+            dropzone.classList.add('border-gray-300');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.name.match(/\.(xlsx|xls)$/i)) {
+                    processExcelFile(file);
+                } else {
+                    alert('Per favore carica solo file Excel (.xlsx o .xls)');
+                }
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropzone = event.currentTarget;
+            dropzone.classList.remove('border-gray-300');
+            dropzone.classList.add('border-indigo-400', 'bg-indigo-50');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropzone = event.currentTarget;
+            dropzone.classList.remove('border-indigo-400', 'bg-indigo-50');
+            dropzone.classList.add('border-gray-300');
+        }
+
+        function processExcelFile(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    const headers = jsonData[0];
+                    const rows = jsonData.slice(1);
+                    
+                    const importedClients = rows.map(row => {
+                        const client = {};
+                        headers.forEach((header, index) => {
+                            if (header && row[index] !== undefined) {
+                                const normalizedHeader = header
+                                    .replace('CUSTOMER<br>CODE', 'CUSTOMER_CODE')
+                                    .replace('CUSTOMER CODE', 'CUSTOMER_CODE')
+                                    .replace('AREA D\'INTERESSE', 'AREA_INTERESSE')
+                                    .replace('ATTIVI?', 'ATTIVI')
+                                    .trim()
+                                    .replace(/\s+/g, '_')
+                                    .toUpperCase();
+                                
+                                client[normalizedHeader] = row[index];
+                            }
+                        });
+                        
+                        // Imposta valori di default per i nuovi campi
+                        if (!client.ZONE) client.ZONE = [];
+                        if (!client.BUDGET_FASCIA) client.BUDGET_FASCIA = 'under100';
+                        if (!client.NOTE) client.NOTE = '';
+                        
+                        return client;
+                    }).filter(client => client.COGNOME && client.NOME);
+                    
+                    state.importedData = importedClients;
+                    render();
+                    
+                } catch (error) {
+                    console.error('Errore:', error);
+                    alert('Errore nella lettura del file Excel.');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function confirmImport() {
+            if (!state.importedData || state.importedData.length === 0) {
+                alert('Nessun dato da importare');
+                return;
+            }
+            
+            // Aggiungi i nuovi clienti
+            state.importedData.forEach(client => {
+                // Assegna nuovo codice se duplicato
+                if (state.clients.some(c => c.CUSTOMER_CODE === client.CUSTOMER_CODE)) {
+                    let nuovoCodice = (parseInt(getUltimoCodice()) + 1).toString();
+                    while (state.clients.some(c => c.CUSTOMER_CODE === nuovoCodice)) {
+                        nuovoCodice = (parseInt(nuovoCodice) + 1).toString();
+                    }
+                    client.CUSTOMER_CODE = nuovoCodice;
+                }
+            });
+            
+            state.clients.push(...state.importedData);
+            saveData();
+            
+            alert(`✅ Importati ${state.importedData.length} clienti con successo!`);
+            state.importedData = null;
+            state.activeTab = 'clients';
+            render();
+        }
+
+        function clearImport() {
+            state.importedData = null;
+            render();
+        }
+
+        function exportClientsToExcel() {
+            if (state.clients.length === 0) {
+                alert('Nessun cliente da esportare');
+                return;
+            }
+            
+            const headers = ['COGNOME', 'NOME', 'CUSTOMER CODE', 'TELEFONO', 'MAIL', 'ATTIVI?', 'ZONE', 'BUDGET', 'NOTE'];
+            const data = state.clients.map(client => [
+                client.COGNOME,
+                client.NOME,
+                client.CUSTOMER_CODE,
+                client.TELEFONO,
+                client.MAIL,
+                client.ATTIVI,
+                client.ZONE ? client.ZONE.join(', ') : '',
+                client.BUDGET_FASCIA ? budgetFasce.find(f => f.id === client.BUDGET_FASCIA)?.label || '' : '',
+                client.NOTE || ''
+            ]);
+            
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+            XLSX.utils.book_append_sheet(wb, ws, 'Clienti');
+            
+            const fileName = `clienti_brescia_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            alert(`✅ Esportati ${state.clients.length} clienti in ${fileName}`);
+        }
+
+        function exportAllToPDF() {
+            if (state.searchResults.length === 0) {
+                alert('Nessun annuncio da esportare');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let y = 20;
+            
+            doc.setFontSize(18);
+            doc.setTextColor(40, 40, 40);
+            doc.text('REPORT COMPLETO ANNUNCI ASTA IMMOBILIARE', 105, y, { align: 'center' });
+            y += 10;
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generato il ${new Date().toLocaleDateString('it-IT')} - ${state.searchResults.length} annunci trovati`, 105, y, { align: 'center' });
+            y += 15;
+            
+            state.searchResults.forEach((annuncio, index) => {
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                doc.setFontSize(12);
+                doc.setTextColor(79, 70, 229);
+                doc.setFont(undefined, 'bold');
+                doc.text(`${index + 1}. ${annuncio.tipologia} - ${annuncio.comune}`, 20, y);
+                y += 7;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(40, 40, 40);
+                doc.setFont(undefined, 'normal');
+                
+                doc.text(`Indirizzo: ${annuncio.indirizzo}`, 25, y);
+                y += 5;
+                doc.text(`Prezzo: €${annuncio.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})} | m²: ${annuncio.metriQuadrati}`, 25, y);
+                y += 5;
+                doc.text(`Data asta: ${annuncio.dataAsta}`, 25, y);
+                y += 8;
+                
+                if (index < state.searchResults.length - 1) {
+                    doc.setDrawColor(200, 200, 200);
+                    doc.setLineWidth(0.2);
+                    doc.line(20, y, 190, y);
+                    y += 8;
+                }
+            });
+            
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Piattaforma Aste Immobiliari', 105, 285, { align: 'center' });
+            
+            doc.save(`report-aste-${new Date().toISOString().split('T')[0]}.pdf`);
+            alert(`✅ Report PDF generato con ${state.searchResults.length} annunci!`);
+        }
+
+        // ========== UTILITY ==========
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // ========== INIZIALIZZAZIONE ==========
         loadInitialData();
         render();
 
         // Esponi funzioni globali
-        window.showImportModal = () => { state.activeTab = 'import'; render(); };
+        window.showImportModal = showImportModal;
         window.toggleZoneSelection = toggleZoneSelection;
         window.selectBudget = selectBudget;
         window.saveNewClient = saveNewClient;
@@ -1484,7 +1857,16 @@
         window.showAddClientModal = showAddClientModal;
         window.closeModal = closeModal;
         window.showModal = showModal;
-        // Aggiungi qui tutte le altre funzioni globali necessarie...
+        window.handleDrop = handleDrop;
+        window.handleDragOver = handleDragOver;
+        window.handleDragLeave = handleDragLeave;
+        window.handleFileSelect = handleFileSelect;
+        window.confirmImport = confirmImport;
+        window.clearImport = clearImport;
+        window.exportClientsToExcel = exportClientsToExcel;
+        window.exportAllToPDF = exportAllToPDF;
+        window.showAnnuncioDetails = showAnnuncioDetails;
+        window.showClientSuggestions = showClientSuggestions;
 
     </script>
 </body>
