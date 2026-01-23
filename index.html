@@ -1635,28 +1635,40 @@ ${annuncio.descrizione}
             const annuncio = state.searchResults.find(a => a.id === annuncioId);
             if (!annuncio) return;
             
-            // Converti clienti per match
-            const clientsForMatch = state.clients.map(client => ({
-                id: client.CUSTOMER_CODE,
-                name: `${client.COGNOME} ${client.NOME}`,
-                email: client.MAIL,
-                preferenze: client.ZONE ? client.ZONE.map(z => `Zona ${z}`) : [],
-                note: client.NOTE || ''
-            }));
+            // Ottieni la zona dal comune usando la nuova mappatura
+            const zonaComune = getZonaDaComune(annuncio.comune);
             
-            const matchedClients = clientsForMatch.filter(client => 
-                client.preferenze.some(p => p.includes(annuncio.comune) || annuncio.comune.includes(p.replace('Zona ', '')))
-            );
-            
-            if (matchedClients.length === 0) {
-                alert('Nessun cliente compatibile trovato per questo annuncio.');
+            if (!zonaComune) {
+                alert(`Comune "${annuncio.comune}" non trovato nella mappatura zone.\n\nProva a cercare un comune della provincia di Brescia.`);
                 return;
             }
             
-            let message = `Clienti compatibili per "${annuncio.tipologia} a ${annuncio.comune}":\n\n`;
-            matchedClients.forEach((client, idx) => {
-                message += `${idx + 1}. ${client.name}\n   Email: ${client.email || 'Nessuna'}\n   Note: ${client.note || 'Nessuna'}\n\n`;
+            // Cerca clienti con questa zona (ZONE contiene codici numerici, es: ["3"])
+            const matchedClients = state.clients.filter(client => {
+                return client.ZONE && client.ZONE.includes(zonaComune);
             });
+            
+            if (matchedClients.length === 0) {
+                const nomeZona = zoneInfo[zonaComune]?.nome || 'Sconosciuta';
+                alert(`Nessun cliente trovato per la zona ${zonaComune} (${annuncio.comune}).\n\nZona ${zonaComune}: ${nomeZona}\n\nClienti cercano zona ${zonaComune}`);
+                return;
+            }
+            
+            let message = `🏠 CLIENTI COMPATIBILI\n`;
+            message += `📍 ${annuncio.tipologia} a ${annuncio.comune} (Zona ${zonaComune}: ${zoneInfo[zonaComune]?.nome})\n`;
+            message += `💰 Prezzo: €${annuncio.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}\n\n`;
+            
+            matchedClients.forEach((client, idx) => {
+                const budgetFascia = budgetFasce.find(f => f.id === client.BUDGET_FASCIA);
+                message += `${idx + 1}. ${client.COGNOME} ${client.NOME}\n`;
+                message += `   📞 ${client.TELEFONO || 'Nessuno'}\n`;
+                message += `   📧 ${client.MAIL || 'Nessuna'}\n`;
+                message += `   💰 Budget: ${budgetFascia?.label || 'Non impostato'}\n`;
+                message += `   📝 Note: ${client.NOTE || 'Nessuna'}\n`;
+                message += `   🔵 Zone preferite: ${client.ZONE ? client.ZONE.map(z => `Zona ${z}`).join(', ') : 'Nessuna'}\n\n`;
+            });
+            
+            message += `📊 Totale: ${matchedClients.length} cliente${matchedClients.length !== 1 ? 'i' : ''} compatibile${matchedClients.length !== 1 ? 'i' : ''}`;
             
             alert(message);
         }
