@@ -57,6 +57,7 @@
         let map = null;
 
         // Nomi e colori delle zone
+              // Nomi e colori delle zone
         const zoneInfo = {
             1: { nome: "CITTÀ E HINTERLAND", colore: "blue" },
             2: { nome: "LAGO DI GARDA", colore: "teal" },
@@ -68,6 +69,60 @@
             8: { nome: "FRANCIACORTA", colore: "orange" }
         };
 
+        // ========== AGGIUNGI QUI ==========
+        // Mappatura completa comuni -> zona (presa dal tuo Excel)
+        const comuniBrescia = {
+            'Acquafredda': '7', 'Adro': '8', 'Agnosine': '6', 'Alfianello': '7',
+            'Anfo': '6', 'Angolo Terme': '4', 'Artogne': '4', 'Azzano Mella': '7',
+            'Bagnolo Mella': '7', 'Bagolino': '6', 'Barbariga': '7', 'Barghe': '7',
+            'Bassano Bresciano': '7', 'Bedizzole': '2', 'Berlingo': '7', 'Berzo Demo': '4',
+            'Berzo Inferiore': '4', 'Bienno': '4', 'Bione': '6', 'Borgo San Giacomo': '7',
+            'Borgosatollo': '1', 'Borno': '4', 'Botticino': '1', 'Bovegno': '5',
+            'Bovezzo': '1', 'Brandico': '7', 'Braone': '4', 'Breno': '4', 'Brescia': '1',
+            'Brione': '5', 'Caino': '5', 'Calcinato': '1', 'Calvagese della Riviera': '2',
+            'Calvisano': '7', 'Capo di Ponte': '4', 'Capovalle': '6', 'Capriano del Colle': '1',
+            'Capriolo': '8', 'Carpenedolo': '7', 'Castegnato': '1', 'Castelcovati': '7',
+            'Castel Mella': '1', 'Castenedolo': '1', 'Casto': '6', 'Castrezzato': '1',
+            'Cazzago San Martino': '8', 'Cedegolo': '4', 'Cellatica': '1', 'Ceto': '4',
+            'Cerveno': '4', 'Cevo': '4', 'Chiari': '7', 'Cigole': '7', 'Cimbergo': '4',
+            'Cividate Camuno': '4', 'Coccaglio': '8', 'Collebeato': '1', 'Collio': '5',
+            'Cologne': '8', 'Comezzano-Cizzago': '7', 'Concesio': '1', 'Corte Franca': '8',
+            'Corteno Golgi': '4', 'Corzano': '7', 'Darfo Boario Terme': '4', 'Dello': '7',
+            'Desenzano del Garda': '2', 'Edolo': '4', 'Erbusco': '8', 'Esine': '4',
+            'Fiesse': '7', 'Flero': '1', 'Gambara': '7', 'Gardone Riviera': '2',
+            'Gardone Val Trompia': '5', 'Gargnano': '2', 'Gavardo': '2', 'Ghedi': '7',
+            'Gianico': '5', 'Gottolengo': '7', 'Gussago': '1', 'Idro': '6', 'Incudine': '4',
+            'Irma': '5', 'Iseo': '3', 'Isorella': '7', 'Lavenone': '6', 'Leno': '7',
+            'Limone sul Garda': '2', 'Lodrino': '5', 'Lograto': '7', 'Lonato': '2',
+            'Longhena': '7', 'Losine': '4', 'Lozio': '4', 'Lumezzane': '5', 'Maclodio': '7',
+            'Magasa': '6', 'Mairano': '7', 'Malegno': '4', 'Malonno': '4', 'Manerba sul Garda': '2',
+            'Manerbio': '7', 'Marcheno': '5', 'Marmentino': '5', 'Marone': '2', 'Mazzano': '1',
+            'Milzano': '7', 'Moniga del Garda': '2', 'Monno': '4', 'Monte Isola': '3',
+            'Monticelli Brusati': '8', 'Montichiari': '7', 'Montirone': '7', 'Mura': '6',
+            'Muscoline': '2', 'Nave': '1', 'Niardo': '4', 'Nuvolento': '1', 'Nuvolera': '1',
+            'Odolo': '6', 'Offlaga': '7', 'Ome': '8', 'Ono San Pietro': '4', 'Orzinuovi': '7',
+            'Orzivecchi': '7', 'Ospitaletto': '1', 'Ossimo': '4', 'Padenghe sul Garda': '2',
+            'Paderno Franciacorta': '8', 'Paisco Loveno': '4', 'Paitone': '6',
+            'Palazzolo sull\'Oglio': '7', 'Paratico': '3', 'Paspardo': '4', 'Passirano': '8',
+            'Pavone Mella': '7', 'San Paolo': '7', 'Pertica Alta': '6', 'Pertica Bassa': '6',
+            'Pezzaze': '4', 'Pian Camuno': '4', 'Piancogno': '4', 'Pisogne': '3', 'Polaveno': '5',
+            'Polpenazze del Garda': '2', 'Pompiano': '7', 'Poncarale': '1', 'Ponte di Legno': '4',
+            'Pontevico': '7', 'Pontoglio': '5', 'Pozzolengo': '2', 'Pralboino': '7', 'Preseglie': '6',
+            'Prevalle': '6', 'Provaglio d\'Iseo': '3', 'Provaglio Valsabbia': '6',
+            'Puegnago sul Garda': '2', 'Quinzano d\'Oglio': '7', 'Remedello': '7', 'Rezzato': '1',
+            'Roccafranca': '7', 'Rodengo Saiano': '8', 'Roè Volciano': '2', 'Roncadelle': '1',
+            'Rovato': '8', 'Rudiano': '7', 'Sabbio Chiese': '6', 'Sale Marasino': '3', 'Salò': '2',
+            'San Felice del Benaco': '2', 'San Gervasio Bresciano': '7', 'San Zeno Naviglio': '1',
+            'Sarezzo': '5', 'Saviore dell\'Adamello': '4', 'Sellero': '4', 'Seniga': '7',
+            'Serle': '6', 'Sirmione': '2', 'Soiano del Lago': '2', 'Sonico': '4', 'Sulzano': '3',
+            'Tavernole sul Mella': '5', 'Temù': '4', 'Tignale': '2', 'Torbole Casaglia': '1',
+            'Toscolano Maderno': '2', 'Travagliato': '7', 'Tremosine': '2', 'Trenzano': '7',
+            'Treviso Bresciano': '6', 'Urago d\'Oglio': '7', 'Vallio': '6', 'Valvestino': '6',
+            'Verolanuova': '7', 'Verolavecchia': '7', 'Vestone': '6', 'Vezza d\'Oglio': '4',
+            'Villa Carcina': '5', 'Villachiara': '7', 'Villanuova Sul Clisi': '2', 'Vione': '4',
+            'Visano': '7', 'Vobarno': '6', 'Zone': '6'
+        };
+      
         // Coordinate per comuni italiani (per la mappa)
         const coordinateComuni = {
             'Brescia': [45.5397, 10.2231], 'Milano': [45.4642, 9.1900], 'Roma': [41.9028, 12.4964], 
@@ -1828,7 +1883,36 @@ ${annuncio.descrizione}
             doc.save(`report-aste-${new Date().toISOString().split('T')[0]}.pdf`);
             alert(`✅ Report PDF generato con ${state.searchResults.length} annunci!`);
         }
+        // ========== FUNZIONI DI CONVERSIONE ==========
+        function getZonaDaComune(comune) {
+            if (!comune) return null;
+            const comuneNormalizzato = comune.trim().toLowerCase();
+            for (const [nomeComune, zona] of Object.entries(comuniBrescia)) {
+                if (nomeComune.toLowerCase() === comuneNormalizzato) {
+                    return zona;
+                }
+            }
+            return null;
+        }
 
+        function getNomeZonaDaComune(comune) {
+            const zona = getZonaDaComune(comune);
+            if (!zona) return null;
+            return zoneInfo[zona]?.nome || null;
+        }
+
+        // ========== UTILITY ==========
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
         // ========== UTILITY ==========
         function debounce(func, wait) {
             let timeout;
