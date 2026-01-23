@@ -1705,26 +1705,20 @@ function renderResultCard(result) {
         }
 
         // ========== RICERCA ASTE ==========
-function deduplicateResults(results) {
-    const seen = new Set();
-    const deduplicated = [];
-    
-    for (const result of results) {
-        const key = `${result.comune}_${result.indirizzo.split(' ')[0]}_${Math.floor(result.prezzo / 10000)}`;
-        if (!seen.has(key)) {
-            seen.add(key);
-            deduplicated.push(result);
-        }
-    }
-    
-    return deduplicated;
-}
+        // ========== RICERCA ASTE ==========
+function performSearch() {
+    const scelta = confirm(
+        "🔍 MODALITÀ RICERCA\n\n" +
+        "Clicca:\n" +
+        "• OK per RICERCA REALE (apre i 22 siti con i tuoi filtri)\n" +
+        "• ANNULLA per DEMO (annunci simulati per test)"
+    );
     
     if (scelta) {
-        // RICERCA REALE
+        // RICERCA REALE - Apre i siti web
         avviaRicercheReali();
     } else {
-        // DEMO (il codice esistente)
+        // DEMO - Annunci simulati (il codice esistente)
         state.isLoading = true;
         state.searchStatus = 'Ricerca demo in corso...';
         render();
@@ -1743,72 +1737,21 @@ function deduplicateResults(results) {
     }
 }
 
-function generateMockResults() {
-    const comuneFiltro = state.filters.comune || '';
-    const tipologiaFiltro = state.filters.tipologia || '';
-    const prezzoMin = parseInt(state.filters.prezzoMin) || 0;
-    const prezzoMax = parseInt(state.filters.prezzoMax) || 10000000;
+function deduplicateResults(results) {
+    const seen = new Set();
+    const deduplicated = [];
     
-    const comuni = comuneFiltro ? [comuneFiltro] : Object.keys(coordinateComuni);
-    const tipologie = tipologiaFiltro ? [tipologiaFiltro] : ['Appartamento', 'Villa', 'Attico', 'Garage', 'Terreno', 'Capannone', 'Ufficio'];
-    
-    const caratteristiche = [
-        'Con giardino privato', 'Box auto incluso', 'In centro storico', 
-        'Zona residenziale tranquilla', 'Vista panoramica', 'Con piscina',
-        'A due passi dal mare', 'Con ampio terrazzo', 'Recentemente ristrutturato',
-        'Classe energetica A4', 'Con cantina', 'Doppi servizi', 'Impianto fotovoltaico'
-    ];
-    
-    const condizioni = [
-        'Ottime condizioni', 'Da ristrutturare completamente', 'Nuovo di costruzione',
-        'Parzialmente ristrutturato', 'Libero immediatamente', 'In classe A',
-        'Con certificazione energetica', 'Pronto per abitare'
-    ];
-    
-    const results = [];
-    const numResults = Math.floor(Math.random() * 8) + 12; // Più annunci per test
-    
-    for (let i = 0; i < numResults; i++) {
-        const comune = comuni[Math.floor(Math.random() * comuni.length)];
-        const tipologia = tipologie[Math.floor(Math.random() * tipologie.length)];
-        const prezzo = Math.floor(Math.random() * (prezzoMax - prezzoMin)) + prezzoMin;
-        
-        if (prezzo < prezzoMin || prezzo > prezzoMax) continue;
-        
-        // Seleziona 1-3 fonti casuali per questo annuncio
-        const fonti = [];
-        const numFonti = Math.floor(Math.random() * 3) + 1;
-        const fontiDisponibili = [...SITES];
-        
-        for (let j = 0; j < numFonti; j++) {
-            if (fontiDisponibili.length === 0) break;
-            const randomIndex = Math.floor(Math.random() * fontiDisponibili.length);
-            const fonte = fontiDisponibili.splice(randomIndex, 1)[0];
-            fonti.push({
-                nome: fonte.name,
-                url: fonte.url,
-                icon: fonte.icon
-            });
+    for (const result of results) {
+        const key = `${result.comune}_${result.indirizzo.split(' ')[0]}_${Math.floor(result.prezzo / 10000)}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            deduplicated.push(result);
         }
-        
-        results.push({
-            id: i + 1,
-            tipologia: tipologia,
-            indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante', 'Vittorio Emanuele'][Math.floor(Math.random() * 6)]} ${Math.floor(Math.random() * 200) + 1}`,
-            comune: comune,
-            prezzo: prezzo,
-            descrizione: `${tipologia} di ${Math.floor(Math.random() * 300) + 50} mq a ${comune}, ${condizioni[Math.floor(Math.random() * condizioni.length)]}. ${caratteristiche[Math.floor(Math.random() * caratteristiche.length)]}.`,
-            dataAsta: `${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/2024`,
-            metriQuadrati: Math.floor(Math.random() * 300) + 50,
-            locali: Math.floor(Math.random() * 6) + 1,
-            coordinate: coordinateBrescia[comune] || coordinateComuni[comune] || MAP_CENTER,
-            fonti: fonti, // Aggiungi le fonti
-            urlEsempio: `https://www.example-aste.com/annuncio/${Math.floor(Math.random() * 10000)}` // URL esempio
-        });
     }
     
-    return results;
+    return deduplicated;
 }
+
 // ========== RICERCA REALE SUI SITI ==========
 
 // Funzione per costruire URL di ricerca REALI per ogni sito
