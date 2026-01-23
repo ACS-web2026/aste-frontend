@@ -43,7 +43,52 @@
         .zone-btn.selected { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .budget-btn { transition: all 0.2s; }
         .budget-btn.selected { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    </style>
+     .badge-fonte {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .badge-fonte:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .link-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        width: 100%;
+    }
+
+    .link-button:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+        transform: translateY(-1px);
+    }
+
+    /* Stili per la modale dei link */
+    .link-modal {
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+</style>
 </head>
 <body>
     <div id="app"></div>
@@ -149,15 +194,31 @@
         };
 
         // Fonti disponibili
-        const SITES = [
-            { name: 'Immobiliare.it', color: 'blue', icon: '🏠' },
-            { name: 'Casa.it', color: 'green', icon: '🏡' },
-            { name: 'Subito.it', color: 'orange', icon: '⚡' },
-            { name: 'Idealista', color: 'purple', icon: '📊' },
-            { name: 'Bakeca', color: 'red', icon: '🍰' },
-            { name: 'Astegiudiziarie.it', color: 'indigo', icon: '⚖️' },
-            { name: 'PortaleAste.it', color: 'pink', icon: '🌐' }
-        ];
+// Sostituisci la costante SITES attuale (circa riga 850) con:
+const SITES = [
+    { name: 'Asta Legale', color: 'blue', icon: '⚖️', url: 'https://www.astalegale.net/' },
+    { name: 'Astagiudiziaria', color: 'green', icon: '🏛️', url: 'https://www.astagiudiziaria.com/' },
+    { name: 'Aste online', color: 'orange', icon: '💻', url: 'https://www.asteonline.it' },
+    { name: 'Asteannunci', color: 'purple', icon: '📢', url: 'https://www.asteannunci.it/' },
+    { name: 'Asteavvisi', color: 'red', icon: '📰', url: 'https://www.asteavvisi.it' },
+    { name: 'Astegiudiziarie', color: 'indigo', icon: '⚖️', url: 'https://www.astegiudiziarie.it' },
+    { name: 'Astetribunali24', color: 'yellow', icon: '📊', url: 'https://astetribunali24.ilsole24ore.com/' },
+    { name: 'Canale Aste', color: 'teal', icon: '📡', url: 'https://www.canaleaste.it' },
+    { name: 'Enti e Tribunali', color: 'gray', icon: '🏢', url: 'http://www.entietribunali.it' },
+    { name: 'FALLCO Aste', color: 'pink', icon: '🏠', url: 'https://www.fallcoaste.it/' },
+    { name: 'Fallimenti.it', color: 'blue', icon: '📋', url: 'https://www.fallimenti.it/' },
+    { name: 'Gara Virtuale', color: 'green', icon: '🎮', url: 'https://www.garavirtuale.it/' },
+    { name: 'Gorealbid', color: 'orange', icon: '💰', url: 'https://www.gobidreal.it/it/aste-Case-e-Appartamenti/' },
+    { name: 'Immobiliare.it', color: 'red', icon: '🏠', url: 'https://aste.immobiliare.it' },
+    { name: 'Legalmente', color: 'purple', icon: '⚖️', url: 'https://legalmente.net' },
+    { name: 'Mercury', color: 'indigo', icon: '☿️', url: 'https://www.mercury-auctions.com/it_it/index/' },
+    { name: 'PVP', color: 'teal', icon: '🏛️', url: 'https://pvp.giustizia.it/pvp/' },
+    { name: 'Repubblica', color: 'blue', icon: '📰', url: 'https://annunci.repubblica.it' },
+    { name: 'SIVAG', color: 'green', icon: '🏢', url: 'https://www.sivag.com/' },
+    { name: 'Vendite Notartel', color: 'orange', icon: '📝', url: 'https://venditepubblichenotarili.notariato.it' },
+    { name: 'Avvisi Notartel', color: 'red', icon: '📢', url: 'https://avvisinotarili.notariato.it' },
+    { name: 'Aste Book', color: 'purple', icon: '📚', url: 'https://www.astebook.it/it/index.asp' }
+];
 
         // Fasce di budget
         const budgetFasce = [
@@ -438,17 +499,27 @@
                     </div>
                     ` : ''}
                     
-                    <div class="mt-6 pt-6 border-t border-gray-100">
+                                        <div class="mt-6 pt-6 border-t border-gray-100">
                         <div class="flex flex-wrap gap-2">
                             <span class="text-xs font-medium text-gray-500">Portali monitorati:</span>
-                            ${SITES.map(site => `
-                                <span class="text-xs px-3 py-1.5 rounded-full ${getSourceColorClass(site.name)}">
+                            ${SITES.slice(0, 8).map(site => `
+                                <a href="${site.url}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   class="text-xs px-3 py-1.5 rounded-full ${getSourceColorClass(site.name)} hover:opacity-80 transition-opacity">
                                     ${site.icon} ${site.name}
-                                </span>
+                                </a>
                             `).join('')}
+                            ${SITES.length > 8 ? `
+                                <span class="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-700">
+                                    +${SITES.length - 8} altri...
+                                </span>
+                            ` : ''}
                         </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            👆 Clicca su qualsiasi portale per visitarlo (si apre in nuova scheda)
+                        </p>
                     </div>
-                </div>
 
                 <!-- Mappa -->
                 ${state.searchResults.length > 0 ? `
@@ -501,77 +572,93 @@
             `;
         }
 
-        function renderResultCard(result) {
-            const prezzoPerMq = result.metriQuadrati > 0 ? (result.prezzo / result.metriQuadrati).toFixed(2) : 'N/A';
-            
-            return `
-            <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden group">
-                <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 border-b border-gray-200">
-                    <div class="flex justify-between items-start gap-4">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="text-xl">🏠</span>
-                                <h3 class="text-xl font-bold text-gray-800">${result.tipologia}</h3>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <p class="text-gray-600 flex items-center gap-2">
-                                    <span class="text-lg">📍</span>
-                                    <span>${result.indirizzo}, ${result.comune}</span>
-                                </p>
-                                <button onclick="geolocalizzaAnnuncio(${result.id})" 
-                                        class="text-xs bg-blue-100 text-blue-600 hover:bg-blue-200 px-2 py-1 rounded-lg flex items-center gap-1">
-                                    <span>🗺️</span>
-                                    <span>Mappa</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2.5 rounded-lg shadow">
-                                <p class="text-xl font-bold">€${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
-                                <p class="text-xs opacity-90">Prezzo base d'asta</p>
-                            </div>
-                        </div>
+// Modifica la funzione renderResultCard() (circa riga 1040) - AGGIUNGI DOPO LA SEZIONE DEI PULSANTI:
+function renderResultCard(result) {
+    const prezzoPerMq = result.metriQuadrati > 0 ? (result.prezzo / result.metriQuadrati).toFixed(2) : 'N/A';
+    
+    return `
+    <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 border-b border-gray-200">
+            <div class="flex justify-between items-start gap-4">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xl">🏠</span>
+                        <h3 class="text-xl font-bold text-gray-800">${result.tipologia}</h3>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <p class="text-gray-600 flex items-center gap-2">
+                            <span class="text-lg">📍</span>
+                            <span>${result.indirizzo}, ${result.comune}</span>
+                        </p>
+                        <button onclick="geolocalizzaAnnuncio(${result.id})" 
+                                class="text-xs bg-blue-100 text-blue-600 hover:bg-blue-200 px-2 py-1 rounded-lg flex items-center gap-1">
+                            <span>🗺️</span>
+                            <span>Mappa</span>
+                        </button>
                     </div>
                 </div>
-                
-                <div class="p-5">
-                    <div class="grid grid-cols-2 gap-3 mb-5">
-                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                            <p class="text-xs font-medium text-blue-600 mb-1">Metratura</p>
-                            <p class="text-lg font-bold text-blue-700">${result.metriQuadrati} m²</p>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-lg border border-green-100">
-                            <p class="text-xs font-medium text-green-600 mb-1">Locali</p>
-                            <p class="text-lg font-bold text-green-700">${result.locali}</p>
-                        </div>
-                        <div class="bg-purple-50 p-3 rounded-lg border border-purple-100">
-                            <p class="text-xs font-medium text-purple-600 mb-1">Prezzo/m²</p>
-                            <p class="text-lg font-bold text-purple-700">€${prezzoPerMq}</p>
-                        </div>
-                        <div class="bg-orange-50 p-3 rounded-lg border border-orange-100">
-                            <p class="text-xs font-medium text-orange-600 mb-1">Data Asta</p>
-                            <p class="text-lg font-bold text-orange-700">${result.dataAsta}</p>
-                        </div>
-                    </div>
-                    
-                    <p class="text-gray-600 mb-5 line-clamp-2">${result.descrizione}</p>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="showAnnuncioDetails(${result.id})" 
-                                class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
-                            <span class="group-hover/btn:scale-110 transition-transform">📊</span>
-                            <span class="text-sm font-medium">Dettagli</span>
-                        </button>
-                        <button onclick="showClientSuggestions(${result.id})" 
-                                class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
-                            <span class="group-hover/btn:scale-110 transition-transform">👥</span>
-                            <span class="text-sm font-medium">Clienti</span>
-                        </button>
+                <div class="text-right">
+                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2.5 rounded-lg shadow">
+                        <p class="text-xl font-bold">€${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
+                        <p class="text-xs opacity-90">Prezzo base d'asta</p>
                     </div>
                 </div>
             </div>
-            `;
-        }
+        </div>
+        
+        <div class="p-5">
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <p class="text-xs font-medium text-blue-600 mb-1">Metratura</p>
+                    <p class="text-lg font-bold text-blue-700">${result.metriQuadrati} m²</p>
+                </div>
+                <div class="bg-green-50 p-3 rounded-lg border border-green-100">
+                    <p class="text-xs font-medium text-green-600 mb-1">Locali</p>
+                    <p class="text-lg font-bold text-green-700">${result.locali}</p>
+                </div>
+                <div class="bg-purple-50 p-3 rounded-lg border border-purple-100">
+                    <p class="text-xs font-medium text-purple-600 mb-1">Prezzo/m²</p>
+                    <p class="text-lg font-bold text-purple-700">€${prezzoPerMq}</p>
+                </div>
+                <div class="bg-orange-50 p-3 rounded-lg border border-orange-100">
+                    <p class="text-xs font-medium text-orange-600 mb-1">Data Asta</p>
+                    <p class="text-lg font-bold text-orange-700">${result.dataAsta}</p>
+                </div>
+            </div>
+            
+            <p class="text-gray-600 mb-5 line-clamp-2">${result.descrizione}</p>
+            
+            <!-- Badge delle fonti -->
+            ${result.fonti && result.fonti.length > 0 ? `
+            <div class="mb-4">
+                <p class="text-xs font-medium text-gray-500 mb-2">Pubblicato su:</p>
+                <div class="flex flex-wrap gap-1">
+                    ${result.fonti.map(fonte => `
+                        <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 flex items-center gap-1">
+                            ${fonte.icon}
+                            <span class="truncate max-w-[80px]">${fonte.nome}</span>
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
+            
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="showAnnuncioDetails(${result.id})" 
+                        class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
+                    <span class="group-hover/btn:scale-110 transition-transform">📊</span>
+                    <span class="text-sm font-medium">Dettagli</span>
+                </button>
+                <button onclick="showClientSuggestions(${result.id})" 
+                        class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
+                    <span class="group-hover/btn:scale-110 transition-transform">👥</span>
+                    <span class="text-sm font-medium">Clienti</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    `;
+}
 
         function renderClientsTab() {
             const filteredClients = getFilteredClients();
@@ -1636,54 +1723,73 @@
             }, 1500);
         }
 
-        function generateMockResults() {
-            const comuneFiltro = state.filters.comune || '';
-            const tipologiaFiltro = state.filters.tipologia || '';
-            const prezzoMin = parseInt(state.filters.prezzoMin) || 0;
-            const prezzoMax = parseInt(state.filters.prezzoMax) || 10000000;
-            
-            const comuni = comuneFiltro ? [comuneFiltro] : Object.keys(coordinateComuni);
-            const tipologie = tipologiaFiltro ? [tipologiaFiltro] : ['Appartamento', 'Villa', 'Attico', 'Garage', 'Terreno', 'Capannone', 'Ufficio'];
-            
-            const caratteristiche = [
-                'Con giardino privato', 'Box auto incluso', 'In centro storico', 
-                'Zona residenziale tranquilla', 'Vista panoramica', 'Con piscina',
-                'A due passi dal mare', 'Con ampio terrazzo', 'Recentemente ristrutturato',
-                'Classe energetica A4', 'Con cantina', 'Doppi servizi', 'Impianto fotovoltaico'
-            ];
-            
-            const condizioni = [
-                'Ottime condizioni', 'Da ristrutturare completamente', 'Nuovo di costruzione',
-                'Parzialmente ristrutturato', 'Libero immediatamente', 'In classe A',
-                'Con certificazione energetica', 'Pronto per abitare'
-            ];
-            
-            const results = [];
-            const numResults = Math.floor(Math.random() * 10) + 5;
-            
-            for (let i = 0; i < numResults; i++) {
-                const comune = comuni[Math.floor(Math.random() * comuni.length)];
-                const tipologia = tipologie[Math.floor(Math.random() * tipologie.length)];
-                const prezzo = Math.floor(Math.random() * (prezzoMax - prezzoMin)) + prezzoMin;
-                
-                if (prezzo < prezzoMin || prezzo > prezzoMax) continue;
-                
-                results.push({
-                    id: i + 1,
-                    tipologia: tipologia,
-                    indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante', 'Vittorio Emanuele'][Math.floor(Math.random() * 6)]} ${Math.floor(Math.random() * 200) + 1}`,
-                    comune: comune,
-                    prezzo: prezzo,
-                    descrizione: `${tipologia} di ${Math.floor(Math.random() * 300) + 50} mq a ${comune}, ${condizioni[Math.floor(Math.random() * condizioni.length)]}. ${caratteristiche[Math.floor(Math.random() * caratteristiche.length)]}.`,
-                    dataAsta: `${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/2024`,
-                    metriQuadrati: Math.floor(Math.random() * 300) + 50,
-                    locali: Math.floor(Math.random() * 6) + 1,
-                    coordinate: coordinateBrescia[comune] || coordinateComuni[comune] || MAP_CENTER
-                });
-            }
-            
-            return results;
+// Modifica la funzione generateMockResults() (circa riga 1850):
+function generateMockResults() {
+    const comuneFiltro = state.filters.comune || '';
+    const tipologiaFiltro = state.filters.tipologia || '';
+    const prezzoMin = parseInt(state.filters.prezzoMin) || 0;
+    const prezzoMax = parseInt(state.filters.prezzoMax) || 10000000;
+    
+    const comuni = comuneFiltro ? [comuneFiltro] : Object.keys(coordinateComuni);
+    const tipologie = tipologiaFiltro ? [tipologiaFiltro] : ['Appartamento', 'Villa', 'Attico', 'Garage', 'Terreno', 'Capannone', 'Ufficio'];
+    
+    const caratteristiche = [
+        'Con giardino privato', 'Box auto incluso', 'In centro storico', 
+        'Zona residenziale tranquilla', 'Vista panoramica', 'Con piscina',
+        'A due passi dal mare', 'Con ampio terrazzo', 'Recentemente ristrutturato',
+        'Classe energetica A4', 'Con cantina', 'Doppi servizi', 'Impianto fotovoltaico'
+    ];
+    
+    const condizioni = [
+        'Ottime condizioni', 'Da ristrutturare completamente', 'Nuovo di costruzione',
+        'Parzialmente ristrutturato', 'Libero immediatamente', 'In classe A',
+        'Con certificazione energetica', 'Pronto per abitare'
+    ];
+    
+    const results = [];
+    const numResults = Math.floor(Math.random() * 8) + 12; // Più annunci per test
+    
+    for (let i = 0; i < numResults; i++) {
+        const comune = comuni[Math.floor(Math.random() * comuni.length)];
+        const tipologia = tipologie[Math.floor(Math.random() * tipologie.length)];
+        const prezzo = Math.floor(Math.random() * (prezzoMax - prezzoMin)) + prezzoMin;
+        
+        if (prezzo < prezzoMin || prezzo > prezzoMax) continue;
+        
+        // Seleziona 1-3 fonti casuali per questo annuncio
+        const fonti = [];
+        const numFonti = Math.floor(Math.random() * 3) + 1;
+        const fontiDisponibili = [...SITES];
+        
+        for (let j = 0; j < numFonti; j++) {
+            if (fontiDisponibili.length === 0) break;
+            const randomIndex = Math.floor(Math.random() * fontiDisponibili.length);
+            const fonte = fontiDisponibili.splice(randomIndex, 1)[0];
+            fonti.push({
+                nome: fonte.name,
+                url: fonte.url,
+                icon: fonte.icon
+            });
         }
+        
+        results.push({
+            id: i + 1,
+            tipologia: tipologia,
+            indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante', 'Vittorio Emanuele'][Math.floor(Math.random() * 6)]} ${Math.floor(Math.random() * 200) + 1}`,
+            comune: comune,
+            prezzo: prezzo,
+            descrizione: `${tipologia} di ${Math.floor(Math.random() * 300) + 50} mq a ${comune}, ${condizioni[Math.floor(Math.random() * condizioni.length)]}. ${caratteristiche[Math.floor(Math.random() * caratteristiche.length)]}.`,
+            dataAsta: `${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/2024`,
+            metriQuadrati: Math.floor(Math.random() * 300) + 50,
+            locali: Math.floor(Math.random() * 6) + 1,
+            coordinate: coordinateBrescia[comune] || coordinateComuni[comune] || MAP_CENTER,
+            fonti: fonti, // Aggiungi le fonti
+            urlEsempio: `https://www.example-aste.com/annuncio/${Math.floor(Math.random() * 10000)}` // URL esempio
+        });
+    }
+    
+    return results;
+}
 
         function deduplicateResults(results) {
             const seen = new Set();
@@ -1713,13 +1819,32 @@
             state.searchResults.forEach(result => {
                 if (result.coordinate) {
                     const marker = L.marker(result.coordinate).addTo(map);
-                    marker.bindPopup(`
-                        <div style="min-width: 200px;">
-                            <strong>${result.tipologia}</strong><br>
-                            <small>${result.indirizzo}, ${result.comune}</small><br>
-                            <strong>€${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</strong>
-                        </div>
-                    `);
+      // Modifica nella funzione initMap() (circa riga 1950):
+marker.bindPopup(`
+    <div style="min-width: 250px;">
+        <strong style="color: #1e40af;">${result.tipologia}</strong><br>
+        <small>${result.indirizzo}, ${result.comune}</small><br>
+        <strong style="color: #059669; font-size: 16px;">
+            €${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}
+        </strong>
+        ${result.fonti && result.fonti.length > 0 ? `
+        <div style="margin-top: 8px;">
+            <small style="color: #6b7280;">Pubblicato su:</small><br>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+                ${result.fonti.slice(0, 3).map(fonte => `
+                    <span style="font-size: 10px; padding: 2px 6px; background: #f3f4f6; border-radius: 10px;">
+                        ${fonte.icon} ${fonte.nome.substring(0, 12)}${fonte.nome.length > 12 ? '...' : ''}
+                    </span>
+                `).join('')}
+            </div>
+            <button onclick="window.open('${result.fonti[0].url}', '_blank')" 
+                    style="margin-top: 8px; padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; width: 100%;">
+                🔍 Vedi annuncio
+            </button>
+        </div>
+        ` : ''}
+    </div>
+`);
                 }
             });
             
@@ -1729,11 +1854,12 @@
             }
         }
 
-        function showAnnuncioDetails(annuncioId) {
-            const annuncio = state.searchResults.find(a => a.id === annuncioId);
-            if (!annuncio) return;
-            
-            const details = `
+// Sostituisci completamente la funzione showAnnuncioDetails() (circa riga 1760):
+function showAnnuncioDetails(annuncioId) {
+    const annuncio = state.searchResults.find(a => a.id === annuncioId);
+    if (!annuncio) return;
+    
+    let details = `
 📋 DETTAGLI COMPLETI ANNUNCIO
 
 🏠 Tipologia: ${annuncio.tipologia}
@@ -1751,10 +1877,113 @@ ${annuncio.descrizione}
 ${annuncio.coordinate && annuncio.coordinate !== MAP_CENTER ? 
 `🗺️ Coordinate: ${annuncio.coordinate[0].toFixed(4)}, ${annuncio.coordinate[1].toFixed(4)}` : 
 '🗺️ Coordinate: Non disponibili'}
+    `;
+    
+    // Se ci sono fonti, crea un messaggio con pulsanti
+    if (annuncio.fonti && annuncio.fonti.length > 0) {
+        const linkDiv = document.createElement('div');
+        linkDiv.innerHTML = `
+            <div style="padding: 15px; background: #f8fafc; border-radius: 10px; margin-top: 15px; max-width: 400px;">
+                <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 16px; font-weight: bold;">
+                    🌐 VISUALIZZA ANNUNCIO SUI SITI
+                </h3>
+                <p style="margin: 0 0 10px 0; color: #4b5563; font-size: 14px;">
+                    Questo annuncio è pubblicato su ${annuncio.fonti.length} portale${annuncio.fonti.length > 1 ? 'i' : ''}:
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                    ${annuncio.fonti.map(fonte => `
+                        <button onclick="window.open('${fonte.url}', '_blank')" 
+                                style="display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;"
+                                onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#9ca3af'"
+                                onmouseout="this.style.background='white'; this.style.borderColor='#d1d5db'">
+                            <span style="font-size: 16px;">${fonte.icon}</span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #374151;">${fonte.nome}</div>
+                                <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">Clicca per visitare il sito</div>
+                            </div>
+                            <span style="color: #3b82f6; font-size: 14px;">🔗</span>
+                        </button>
+                    `).join('')}
+                </div>
+                ${annuncio.urlEsempio ? `
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #d1d5db;">
+                    <button onclick="window.open('${annuncio.urlEsempio}', '_blank')" 
+                            style="width: 100%; padding: 10px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        🔍 Vedi annuncio completo (esempio)
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Mostra prima i dettagli in alert
+        alert(details);
+        
+        // Poi mostra la finestra con i link
+        setTimeout(() => {
+            const linkModal = document.createElement('div');
+            linkModal.style.position = 'fixed';
+            linkModal.style.top = '0';
+            linkModal.style.left = '0';
+            linkModal.style.right = '0';
+            linkModal.style.bottom = '0';
+            linkModal.style.background = 'rgba(0,0,0,0.5)';
+            linkModal.style.display = 'flex';
+            linkModal.style.alignItems = 'center';
+            linkModal.style.justifyContent = 'center';
+            linkModal.style.zIndex = '9999';
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.background = 'white';
+            modalContent.style.borderRadius = '12px';
+            modalContent.style.padding = '20px';
+            modalContent.style.maxWidth = '450px';
+            modalContent.style.width = '90%';
+            modalContent.style.maxHeight = '80vh';
+            modalContent.style.overflow = 'auto';
+            modalContent.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)';
+            
+            modalContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0; color: #1f2937; font-size: 18px; font-weight: bold;">
+                        🌐 Collegamenti ai siti
+                    </h2>
+                    <button onclick="this.closest('.link-modal').remove()" 
+                            style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                        ×
+                    </button>
+                </div>
+                <div style="margin-bottom: 15px; color: #4b5563; font-size: 14px;">
+                    <p style="margin: 0 0 5px 0;">
+                        <strong>${annuncio.tipologia}</strong> a ${annuncio.comune}
+                    </p>
+                    <p style="margin: 0; color: #059669; font-weight: 600;">
+                        €${annuncio.prezzo.toLocaleString('it-IT')}
+                    </p>
+                </div>
+                ${linkDiv.innerHTML}
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="this.closest('.link-modal').remove()" 
+                            style="padding: 8px 20px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        Chiudi
+                    </button>
+                </div>
             `;
             
-            alert(details);
-        }
+            linkModal.appendChild(modalContent);
+            linkModal.classList.add('link-modal');
+            linkModal.onclick = function(e) {
+                if (e.target === linkModal) {
+                    linkModal.remove();
+                }
+            };
+            
+            document.body.appendChild(linkModal);
+        }, 100);
+    } else {
+        alert(details);
+    }
+}
 
         function geolocalizzaAnnuncio(annuncioId) {
             const annuncio = state.searchResults.find(a => a.id === annuncioId);
