@@ -122,7 +122,26 @@
             'Villa Carcina': '5', 'Villachiara': '7', 'Villanuova Sul Clisi': '2', 'Vione': '4',
             'Visano': '7', 'Vobarno': '6', 'Zone': '6'
         };
-      
+
+        // Coordinate per comuni di Brescia (aggiungere dopo comuniBrescia)
+        const coordinateBrescia = {
+            'Brescia': [45.5397, 10.2231],
+            'Iseo': [45.6584, 10.0539],
+            'Gardone Riviera': [45.6200, 10.5656],
+            'Salò': [45.6069, 10.5278],
+            'Desenzano del Garda': [45.4686, 10.5397],
+            'Chiari': [45.5361, 9.9306],
+            'Rovato': [45.5631, 10.0008],
+            'Palazzolo sull\'Oglio': [45.5961, 9.8819],
+            'Darfo Boario Terme': [45.8900, 10.1867],
+            'Lumezzane': [45.6478, 10.2639],
+            'Montichiari': [45.4139, 10.3917],
+            'Orzinuovi': [45.4039, 9.9219],
+            'Ghedi': [45.4036, 10.2769],
+            'Sarezzo': [45.6519, 10.1964],
+            'Rezzato': [45.5139, 10.3172]
+        };
+        
         // Coordinate per comuni italiani (per la mappa)
         const coordinateComuni = {
             'Brescia': [45.5397, 10.2231], 'Milano': [45.4642, 9.1900], 'Roma': [41.9028, 12.4964], 
@@ -839,11 +858,17 @@
                                 <span class="text-xl">🏠</span>
                                 <h3 class="text-xl font-bold text-gray-800">${result.tipologia}</h3>
                             </div>
+                            <div class="flex items-center justify-between">
                             <p class="text-gray-600 flex items-center gap-2">
                                 <span class="text-lg">📍</span>
                                 <span>${result.indirizzo}, ${result.comune}</span>
-                            </p>
-                        </div>
+                             </p>
+                                <button onclick="geolocalizzaAnnuncio(${result.id})" 
+                                        class="text-xs bg-blue-100 text-blue-600 hover:bg-blue-200 px-2 py-1 rounded-lg flex items-center gap-1">
+                                    <span>🗺️</span>
+                                    <span>Mappa</span>
+                                </button>
+                            </div>
                         <div class="text-right">
                             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2.5 rounded-lg shadow">
                                 <p class="text-xl font-bold">€${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
@@ -1651,10 +1676,10 @@
                     comune: comune,
                     prezzo: prezzo,
                     descrizione: `${tipologia} di ${Math.floor(Math.random() * 300) + 50} mq a ${comune}, ${condizioni[Math.floor(Math.random() * condizioni.length)]}. ${caratteristiche[Math.floor(Math.random() * caratteristiche.length)]}.`,
-                    dataAsta: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+                    dataAsta: `${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/2024`,
                     metriQuadrati: Math.floor(Math.random() * 300) + 50,
                     locali: Math.floor(Math.random() * 6) + 1,
-                    coordinate: coordinateComuni[comune] || MAP_CENTER
+                    coordinate: coordinateBrescia[comune] || coordinateComuni[comune] || MAP_CENTER
                 });
             }
             
@@ -1705,39 +1730,60 @@
             }
         }
 
-        function showAnnuncioDetails(annuncioId) {
+              function showAnnuncioDetails(annuncioId) {
             const annuncio = state.searchResults.find(a => a.id === annuncioId);
             if (!annuncio) return;
             
             const details = `
-📋 <strong>DETTAGLI COMPLETI ANNUNCIO</strong>
+📋 DETTAGLI COMPLETI ANNUNCIO
 
-🏠 <strong>Tipologia:</strong> ${annuncio.tipologia}
-📍 <strong>Indirizzo:</strong> ${annuncio.indirizzo}, ${annuncio.comune}
-💰 <strong>Prezzo base d'asta:</strong> €${annuncio.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}
-📏 <strong>Metratura:</strong> ${annuncio.metriQuadrati} m²
-🚪 <strong>Locali:</strong> ${annuncio.locali}
-🏷️ <strong>Prezzo al m²:</strong> €${(annuncio.prezzo / annuncio.metriQuadrati).toFixed(2)}
-📅 <strong>Data asta:</strong> ${annuncio.dataAsta}
+🏠 Tipologia: ${annuncio.tipologia}
+📍 Indirizzo: ${annuncio.indirizzo}, ${annuncio.comune}
+💰 Prezzo base d'asta: €${annuncio.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}
+📏 Metratura: ${annuncio.metriQuadrati} m²
+🚪 Locali: ${annuncio.locali}
+🏷️ Prezzo al m²: €${(annuncio.prezzo / annuncio.metriQuadrati).toFixed(2)}
+📅 Data asta: ${annuncio.dataAsta}
+🎯 Zona: ${getNomeZonaDaComune(annuncio.comune) || 'Non specificata'}
 
-📝 <strong>Descrizione:</strong>
+📝 Descrizione:
 ${annuncio.descrizione}
+
+${annuncio.coordinate && annuncio.coordinate !== MAP_CENTER ? 
+`🗺️ Coordinate: ${annuncio.coordinate[0].toFixed(4)}, ${annuncio.coordinate[1].toFixed(4)}` : 
+'🗺️ Coordinate: Non disponibili'}
             `;
             
             alert(details);
         }
 
-        function showClientSuggestions(annuncioId) {
+        function geolocalizzaAnnuncio(annuncioId) {
             const annuncio = state.searchResults.find(a => a.id === annuncioId);
             if (!annuncio) return;
             
-            // Ottieni la zona dal comune usando la nuova mappatura
-            const zonaComune = getZonaDaComune(annuncio.comune);
-            
-            if (!zonaComune) {
-                alert(`Comune "${annuncio.comune}" non trovato nella mappatura zone.\n\nProva a cercare un comune della provincia di Brescia.`);
+            if (!annuncio.coordinate || annuncio.coordinate === MAP_CENTER) {
+                alert(`Coordinate non disponibili per ${annuncio.comune}.\n\nGeolocalizzazione possibile solo per comuni della provincia di Brescia.`);
                 return;
             }
+            
+            // Centra la mappa sull'annuncio
+            if (map) {
+                map.setView(annuncio.coordinate, 15);
+                
+                // Apri il popup del marker
+                map.eachLayer((layer) => {
+                    if (layer instanceof L.Marker && 
+                        layer.getLatLng().lat === annuncio.coordinate[0] && 
+                        layer.getLatLng().lng === annuncio.coordinate[1]) {
+                        layer.openPopup();
+                    }
+                });
+                
+                alert(`Mappa centrata su: ${annuncio.indirizzo}, ${annuncio.comune}`);
+            } else {
+                alert('Carica prima la mappa effettuando una ricerca.');
+            }
+        }
             
             // Cerca clienti con questa zona (ZONE contiene codici numerici, es: ["3"])
             const matchedClients = state.clients.filter(client => {
@@ -2075,8 +2121,8 @@ ${annuncio.descrizione}
         window.exportAllToPDF = exportAllToPDF;
         window.showAnnuncioDetails = showAnnuncioDetails;
         window.showClientSuggestions = showClientSuggestions;
+        window.geolocalizzaAnnuncio = geolocalizzaAnnuncio;
         window.downloadTemplate = downloadTemplate;
-
 
     </script>
 </body>
