@@ -1724,7 +1724,7 @@ function performSearch() {
         render();
         
         setTimeout(() => {
-            const rawResults = generateResults();
+            const rawResults = generateMockResults();
             const deduplicatedResults = deduplicateResults(rawResults);
             
             state.searchResults = deduplicatedResults;
