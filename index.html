@@ -1831,7 +1831,9 @@ function avviaRicercheReali() {
     // Genera URL per tutti i siti
     SITES.forEach(site => {
         try {
-            const searchUrl = costruisciUrlRicercaAvanzata(site, filtriCompleti);
+            // ✅ CORREZIONE: usa la funzione corretta
+            const searchUrl = costruisciUrlRicercaReale(site, filtriCompleti);
+            
             if (searchUrl) {
                 urlList.push({
                     nome: site.name,
@@ -1951,17 +1953,52 @@ function mostraPannelloRicercheReali(urlList) {
     showModal(modalContent);
 }
 
-// Funzione per aprire tutti i siti in una volta
+        function getColoreSito(siteName) {
+    const site = SITES.find(s => s.name === siteName);
+    return site ? site.color : 'gray';
+}
+
+        // Funzione per aprire tutti i siti in una volta
+// Modifica la funzione apriTuttiSiti():
 function apriTuttiSiti() {
     let count = 0;
+    let delay = 0;
+    
     SITES.forEach(site => {
-        const searchUrl = costruisciUrlRicercaReale(site, state.filters);
-        if (searchUrl) {
-            window.open(searchUrl, '_blank');
-            count++;
-        }
+        setTimeout(() => {
+            const searchUrl = costruisciUrlRicercaReale(site, state.filters);
+            if (searchUrl) {
+                window.open(searchUrl, '_blank');
+                count++;
+                
+                // Aggiorna contatore in tempo reale
+                if (count === 1 || count % 5 === 0) {
+                    const modalContent = document.querySelector('.modal-overlay > div');
+                    if (modalContent) {
+                        const apriBtn = modalContent.querySelector('button[onclick*="apriTuttiSiti"]');
+                        if (apriBtn) {
+                            apriBtn.innerHTML = `🔓 Aperti ${count}/${SITES.length} siti`;
+                        }
+                    }
+                }
+            }
+        }, delay);
+        
+        delay += 100; // Ritardo di 100ms tra un'apertura e l'altra
     });
-    alert(`✅ Aperti ${count} siti in nuove schede!`);
+    
+    // Reset del pulsante dopo 5 secondi
+    setTimeout(() => {
+        const modalContent = document.querySelector('.modal-overlay > div');
+        if (modalContent) {
+            const apriBtn = modalContent.querySelector('button[onclick*="apriTuttiSiti"]');
+            if (apriBtn) {
+                apriBtn.innerHTML = `🔓 Apri tutti i siti`;
+                apriBtn.disabled = false;
+            }
+        }
+        alert(`✅ Aperti ${count} siti in nuove schede!`);
+    }, Math.max(delay, 5000));
 }
 
 // Funzione per tracciare i click (opzionale)
