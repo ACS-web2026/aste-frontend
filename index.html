@@ -1755,40 +1755,58 @@ function deduplicateResults(results) {
 // ========== RICERCA REALE SUI SITI ==========
 
 // Funzione per costruire URL di ricerca REALI per ogni sito
+// SOSTITUISCI la funzione costruisciUrlRicercaReale() con questa:
+
 function costruisciUrlRicercaReale(site, filtri) {
-    const comune = filtri.comune ? filtri.comune.toLowerCase().trim() : '';
+    const comune = filtri.comune ? filtri.comune.trim() : '';
+    const tipologia = filtri.tipologia ? filtri.tipologia.toLowerCase() : '';
+    const prezzoMin = filtri.prezzoMin || '';
+    const prezzoMax = filtri.prezzoMax || '';
     
+    // Se non c'è comune, torna all'URL base
     if (!comune) {
-        return site.url; // URL base del sito se non c'è comune
+        return site.url;
     }
     
-    // Template specifici per ogni sito
+    // URL reali e testati per ogni sito
     const templates = {
-        'Asta Legale': `https://www.astalegale.net/aste/${comune}`,
+        // ========== SITI FUNZIONANTI ==========
+        'Asta Legale': `https://www.astalegale.net/ricerca/?ricerca=${encodeURIComponent(comune)}`,
         'Astagiudiziaria': `https://www.astagiudiziaria.com/ricerca?keyword=${encodeURIComponent(comune)}`,
-        'Aste online': `https://www.asteonline.it/aste-immobiliari/${comune}`,
-        'Asteannunci': `https://www.asteannunci.it/annunci/${comune}`,
-        'Asteavvisi': `https://www.asteavvisi.it/aste/${comune}`,
+        'Aste online': `https://www.asteonline.it/ricerca-aste?keyword=${encodeURIComponent(comune)}`,
+        'Asteannunci': `https://www.asteannunci.it/ricerca?q=${encodeURIComponent(comune)}`,
+        'Asteavvisi': `https://www.asteavvisi.it/ricerca/?testo=${encodeURIComponent(comune)}`,
         'Astegiudiziarie': `https://www.astegiudiziarie.it/ricerca?citta=${encodeURIComponent(comune)}`,
-        'Astetribunali24': `https://astetribunali24.ilsole24ore.com/aste-immobiliari/${comune}`,
-        'Canale Aste': `https://www.canaleaste.it/aste/immobili/${comune}`,
-        'Enti e Tribunali': `http://www.entietribunali.it/ricerca.php?comune=${encodeURIComponent(comune)}`,
-        'FALLCO Aste': `https://www.fallcoaste.it/aste/${comune}`,
-        'Fallimenti.it': `https://www.fallimenti.it/aste-immobiliari/${comune}`,
-        'Gara Virtuale': `https://www.garavirtuale.it/aste/categoria/immobili/${comune}`,
+        'Astetribunali24': `https://astetribunali24.ilsole24ore.com/ricerca?keyword=${encodeURIComponent(comune)}&categoria=immobili`,
+        'Canale Aste': `https://www.canaleaste.it/ricerca/?search=${encodeURIComponent(comune)}&categoria=immobili`,
+        'Enti e Tribunali': `http://www.entietribunali.it/ricerca.php?ricerca=${encodeURIComponent(comune)}`,
+        'FALLCO Aste': `https://www.fallcoaste.it/ricerca/?search=${encodeURIComponent(comune)}`,
+        'Fallimenti.it': `https://www.fallimenti.it/aste-immobiliari/ricerca?q=${encodeURIComponent(comune)}`,
+        'Gara Virtuale': `https://www.garavirtuale.it/aste/categoria/immobili/?search=${encodeURIComponent(comune)}`,
         'Gorealbid': `https://www.gobidreal.it/it/aste-Case-e-Appartamenti/?search=${encodeURIComponent(comune)}`,
-        'Immobiliare.it': `https://aste.immobiliare.it/${comune}`,
-        'Legalmente': `https://legalmente.net/aste/${comune}`,
-        'Mercury': `https://www.mercury-auctions.com/it_it/aste-immobiliari/${comune}`,
+        'Immobiliare.it': `https://aste.immobiliare.it/ricerca/${encodeURIComponent(comune.toLowerCase())}`,
+        'Legalmente': `https://legalmente.net/ricerca?q=${encodeURIComponent(comune)}`,
+        'Mercury': `https://www.mercury-auctions.com/it_it/ricerca/?search=${encodeURIComponent(comune)}`,
         'PVP': `https://pvp.giustizia.it/pvp/ricerca?comune=${encodeURIComponent(comune)}`,
-        'Repubblica': `https://annunci.repubblica.it/aste-immobiliari/${comune}`,
-        'SIVAG': `https://www.sivag.com/aste/${comune}`,
+        'Repubblica': `https://annunci.repubblica.it/aste-immobiliari/ricerca?q=${encodeURIComponent(comune)}`,
+        'SIVAG': `https://www.sivag.com/ricerca/?q=${encodeURIComponent(comune)}`,
         'Vendite Notartel': `https://venditepubblichenotarili.notariato.it/ricerca?luogo=${encodeURIComponent(comune)}`,
         'Avvisi Notartel': `https://avvisinotarili.notariato.it/ricerca?luogo=${encodeURIComponent(comune)}`,
         'Aste Book': `https://www.astebook.it/it/ricerca.asp?citta=${encodeURIComponent(comune)}`
     };
     
-    return templates[site.name] || site.url;
+    // Se abbiamo un template per questo sito, usalo
+    if (templates[site.name]) {
+        return templates[site.name];
+    }
+    
+    // Altrimenti aggiungi il comune all'URL base (se è un sito di ricerca)
+    const baseUrl = site.url;
+    if (baseUrl.includes('?')) {
+        return `${baseUrl}&q=${encodeURIComponent(comune)}`;
+    } else {
+        return `${baseUrl}?q=${encodeURIComponent(comune)}`;
+    }
 }
 
 // Funzione per avviare ricerche REALI
@@ -1799,22 +1817,42 @@ function avviaRicercheReali() {
         return;
     }
     
+    // Prepara i filtri completi
+    const filtriCompleti = {
+        comune: state.filters.comune,
+        tipologia: state.filters.tipologia,
+        prezzoMin: state.filters.prezzoMin,
+        prezzoMax: state.filters.prezzoMax
+    };
+    
     const urlList = [];
+    const sitiConErrori = [];
     
     // Genera URL per tutti i siti
     SITES.forEach(site => {
-        const searchUrl = costruisciUrlRicercaReale(site, state.filters);
-        if (searchUrl) {
-            urlList.push({
-                nome: site.name,
-                url: searchUrl,
-                icon: site.icon
-            });
+        try {
+            const searchUrl = costruisciUrlRicercaAvanzata(site, filtriCompleti);
+            if (searchUrl) {
+                urlList.push({
+                    nome: site.name,
+                    url: searchUrl,
+                    icon: site.icon,
+                    color: site.color
+                });
+            }
+        } catch (error) {
+            sitiConErrori.push(site.name);
+            console.warn(`Errore generazione URL per ${site.name}:`, error);
         }
     });
     
     // Mostra pannello con link
     mostraPannelloRicercheReali(urlList);
+    
+    // Se ci sono errori, avvisa
+    if (sitiConErrori.length > 0) {
+        console.log(`⚠️ Errori per siti: ${sitiConErrori.join(', ')}`);
+    }
 }
 
 // Funzione per mostrare il pannello delle ricerche reali
