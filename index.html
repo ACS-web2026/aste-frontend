@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piattaforma Aste Immobiliari Avanzata</title>
+    <title>Piattaforma Aste Immobiliari - Gestione Clienti Brescia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
         .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -35,6 +36,9 @@
             justify-content: center;
             z-index: 1000;
         }
+        .client-row:hover { background-color: #f8fafc; }
+        table { border-collapse: separate; border-spacing: 0; }
+        th { position: sticky; top: 0; background: white; z-index: 10; }
     </style>
 </head>
 <body>
@@ -44,49 +48,108 @@
     <script>
         // Configurazione
         const MASTER_PASSWORD = 'aste2025';
-        const MAP_CENTER = [41.8719, 12.5674];
-        const MAP_ZOOM = 6;
+        const MAP_CENTER = [45.5397, 10.2231]; // Brescia
+        const MAP_ZOOM = 10;
         let map = null;
+
+        // Mappa comuni -> zona (provincia di Brescia)
+        const zoneComuni = {
+            // Zona 1: CITTÀ E HINTERLAND
+            'Brescia': 1, 'Borgosatollo': 1, 'Botticino': 1, 'Bovezzo': 1, 'Calcinato': 1,
+            'Capriano del Colle': 1, 'Castegnato': 1, 'Castel Mella': 1, 'Castenedolo': 1,
+            'Castrezzato': 1, 'Cellatica': 1, 'Collebeato': 1, 'Concesio': 1, 'Flero': 1,
+            'Gussago': 1, 'Mazzano': 1, 'Nave': 1, 'Nuvolento': 1, 'Nuvolera': 1,
+            'Ospitaletto': 1, 'Poncarale': 1, 'Rezzato': 1, 'Roncadelle': 1, 'San Zeno Naviglio': 1,
+            'Torbole Casaglia': 1,
+            
+            // Zona 7: BASSA BRESCIANA (Barbariga, etc.)
+            'Barbariga': 7, 'Acquafredda': 7, 'Azzano Mella': 7, 'Bagnolo Mella': 7,
+            'Bassano Bresciano': 7, 'Berlingo': 7, 'Borgo San Giacomo': 7, 'Brandico': 7,
+            'Calvisano': 7, 'Carpenedolo': 7, 'Castelcovati': 7, 'Chiari': 7,
+            'Cigole': 7, 'Comezzano-Cizzago': 7, 'Corzano': 7, 'Dello': 7,
+            'Fiesse': 7, 'Gambara': 7, 'Ghedi': 7, 'Gottolengo': 7, 'Isorella': 7,
+            'LenO': 7, 'Lograto': 7, 'Longhena': 7, 'Maclodio': 7, 'Mairano': 7,
+            'Manerbio': 7, 'Milzano': 7, 'Montichiari': 7, 'Montirone': 7,
+            'Offlaga': 7, 'Orzinuovi': 7, 'Orzivecchi': 7, 'Palazzolo sull\'Oglio': 7,
+            'Pavone Mella': 7, 'San Paolo': 7, 'Pompiano': 7, 'Pontevico': 7,
+            'Pralboino': 7, 'Quinzano d\'Oglio': 7, 'Remedello': 7, 'Roccafranca': 7,
+            'Rudiano': 7, 'San Gervasio Bresciano': 7, 'Seniga': 7, 'Travagliato': 7,
+            'Trenzano': 7, 'Urago d\'Oglio': 7, 'Verolanuova': 7, 'Verolavecchia': 7,
+            'Villachiara': 7, 'Visano': 7,
+            
+            // Altre zone semplificate per demo
+            'Bedizzole': 2, 'Desenzano del Garda': 2, 'Gardone Riviera': 2,
+            'Iseo': 3, 'Paratico': 3, 'Pisogne': 3,
+            'Angolo Terme': 4, 'Artogne': 4, 'Berzo Demo': 4,
+            'Bovegno': 5, 'Gardone Val Trompia': 5, 'Lumezzane': 5,
+            'Agnosine': 6, 'Anfo': 6, 'Bagolino': 6,
+            'Adro': 8, 'Capriolo': 8, 'Cazzago San Martino': 8
+        };
+
+        // Nomi delle zone
+        const nomiZone = {
+            1: "CITTÀ E HINTERLAND",
+            2: "LAGO DI GARDA", 
+            3: "LAGO D'ISEO",
+            4: "VAL CAMONICA",
+            5: "VAL TROMPIA",
+            6: "VALLE SABBIA",
+            7: "BASSA BRESCIANA",
+            8: "FRANCIACORTA"
+        };
 
         // State globale
         let state = {
             isAuthenticated: false,
             password: '',
             showPassword: false,
-            activeTab: 'search',
+            activeTab: 'clients',  // Default su clienti
             isLoading: false,
-            searchStatus: 'Pronto per la ricerca',
-            filters: { comune: '', tipologia: '', prezzoMin: '', prezzoMax: '' },
-            clients: [
-                { id: '1', name: 'Mario Rossi', email: 'mario@email.com', budget: 350000, preferenze: ['Milano', 'Appartamento'], note: 'Cerca trilocale' },
-                { id: '2', name: 'Laura Bianchi', email: 'laura@email.com', budget: 500000, preferenze: ['Roma', 'Villa'], note: 'Zona residenziale' },
-                { id: '3', name: 'Giuseppe Verdi', email: 'giuseppe@email.com', budget: 200000, preferenze: ['Torino', 'Garage'], note: 'Per investimento' },
-                { id: '4', name: 'Anna Neri', email: 'anna@email.com', budget: 600000, preferenze: ['Firenze', 'Attico'], note: 'Vista panoramica' }
-            ],
-            searchResults: [],
-            selectedAnnuncio: null,
-            showClientSuggestions: false
+            clients: [],
+            // Filtri clienti
+            clientFilters: {
+                zona: '',
+                attivo: '',
+                search: ''
+            }
         };
 
-        // Coordinate per comuni
-        const coordinateComuni = {
-            'Milano': [45.4642, 9.1900], 'Roma': [41.9028, 12.4964], 'Torino': [45.0703, 7.6869],
-            'Napoli': [40.8518, 14.2681], 'Firenze': [43.7696, 11.2558], 'Bologna': [44.4949, 11.3426],
-            'Genova': [44.4056, 8.9463], 'Venezia': [45.4408, 12.3155], 'Verona': [45.4384, 10.9916],
-            'Padova': [45.4064, 11.8768], 'Bari': [41.1171, 16.8719], 'Palermo': [38.1157, 13.3615],
-            'Catania': [37.5079, 15.0830], 'Cagliari': [39.2238, 9.1217]
-        };
+        // Carica dati iniziali
+        function loadInitialData() {
+            const saved = localStorage.getItem('clientiBrescia');
+            if (saved) {
+                state.clients = JSON.parse(saved);
+            } else {
+                // Dati di esempio compatibili con il tuo Excel
+                state.clients = [
+                    {
+                        COGNOME: "Singh",
+                        NOME: "Jasvir",
+                        CUSTOMER_CODE: "1",
+                        TELEFONO: "3270591632",
+                        MAIL: "baljitkaurtoor72@gmail.com",
+                        ATTIVI: "SI",
+                        AREA_INTERESSE: "Barbariga",
+                        ZONA: "7"
+                    },
+                    {
+                        COGNOME: "De Donno",
+                        NOME: "Remo",
+                        CUSTOMER_CODE: "7",
+                        TELEFONO: "3383830276",
+                        MAIL: "",
+                        ATTIVI: "SI",
+                        AREA_INTERESSE: "Brescia e altro - 70k da mettere a reddito",
+                        ZONA: "1"
+                    }
+                ];
+                saveData();
+            }
+        }
 
-        // Fonti disponibili
-        const SITES = [
-            { name: 'Immobiliare.it', color: 'blue', icon: '🏠' },
-            { name: 'Casa.it', color: 'green', icon: '🏡' },
-            { name: 'Subito.it', color: 'orange', icon: '⚡' },
-            { name: 'Idealista', color: 'purple', icon: '📊' },
-            { name: 'Bakeca', color: 'red', icon: '🍰' },
-            { name: 'Astegiudiziarie.it', color: 'indigo', icon: '⚖️' },
-            { name: 'PortaleAste.it', color: 'pink', icon: '🌐' }
-        ];
+        function saveData() {
+            localStorage.setItem('clientiBrescia', JSON.stringify(state.clients));
+        }
 
         // Render app principale
         function render() {
@@ -97,14 +160,6 @@
                 app.innerHTML = renderMain();
             }
             attachEventListeners();
-            
-            // Inizializza mappa se ci sono risultati
-            if (state.activeTab === 'search' && state.searchResults.length > 0) {
-                setTimeout(initMap, 100);
-            }
-            
-            // Render modale se necessario
-            renderModal();
         }
 
         function renderLogin() {
@@ -117,9 +172,9 @@
                         </svg>
                     </div>
                     <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">
-                        Piattaforma Aste
+                        Piattaforma Clienti Brescia
                     </h1>
-                    <p class="text-center text-gray-600 mb-8">Sistema avanzato di monitoraggio</p>
+                    <p class="text-center text-gray-600 mb-8">Gestione clienti con zone provincia</p>
                     
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Password di accesso</label>
@@ -150,7 +205,7 @@
                     
                     <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                         <p class="text-sm text-blue-800 text-center">
-                            <strong>Credenziali demo:</strong> aste2025
+                            <strong>Credenziali:</strong> aste2025
                         </p>
                     </div>
                 </div>
@@ -172,15 +227,15 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h1 class="text-2xl font-bold">Piattaforma Aste Immobiliari</h1>
-                                    <p class="text-sm text-indigo-200">Monitoraggio avanzato su 7 portali</p>
+                                    <h1 class="text-2xl font-bold">Gestione Clienti Brescia</h1>
+                                    <p class="text-sm text-indigo-200">Zonizzazione provincia di Brescia</p>
                                 </div>
                             </div>
                             
                             <div class="flex items-center gap-4">
                                 <div class="hidden sm:block text-right">
                                     <p class="text-sm text-indigo-200">Clienti attivi</p>
-                                    <p class="text-lg font-bold">${state.clients.length}</p>
+                                    <p class="text-lg font-bold">${getClientiAttivi()}</p>
                                 </div>
                                 <button id="logout-btn" class="bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-lg transition-colors backdrop-blur-sm border border-white/30">
                                     🔓 Esci
@@ -195,16 +250,16 @@
                     <div class="max-w-7xl mx-auto">
                         <div class="flex overflow-x-auto">
                             <button
-                                id="tab-search"
-                                class="flex-1 py-4 px-2 border-b-2 font-medium whitespace-nowrap ${state.activeTab === 'search' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}"
-                            >
-                                🔍 Ricerca Aste
-                            </button>
-                            <button
                                 id="tab-clients"
                                 class="flex-1 py-4 px-2 border-b-2 font-medium whitespace-nowrap ${state.activeTab === 'clients' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}"
                             >
                                 👥 Clienti (${state.clients.length})
+                            </button>
+                            <button
+                                id="tab-import"
+                                class="flex-1 py-4 px-2 border-b-2 font-medium whitespace-nowrap ${state.activeTab === 'import' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}"
+                            >
+                                📁 Importa Excel
                             </button>
                         </div>
                     </div>
@@ -212,692 +267,371 @@
 
                 <!-- Main Content -->
                 <main class="max-w-7xl mx-auto px-4 py-8">
-                    ${state.activeTab === 'search' ? renderSearchTab() : renderClientsTab()}
+                    ${state.activeTab === 'clients' ? renderClientsTab() : renderImportTab()}
                 </main>
             </div>
             `;
         }
 
-        function renderSearchTab() {
-            return `
-            <div class="space-y-8">
-                <!-- Filtri di Ricerca -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="bg-indigo-100 p-3 rounded-xl">
-                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800">Ricerca Avanzata</h2>
-                            <p class="text-gray-600">Cerca aste immobiliari su 7 portali</p>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Comune</label>
-                            <input
-                                id="filter-comune"
-                                type="text"
-                                placeholder="Es: Milano, Roma..."
-                                value="${state.filters.comune}"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                            />
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipologia</label>
-                            <select
-                                id="filter-tipologia"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                            >
-                                <option value="">Tutte le tipologie</option>
-                                <option value="Appartamento" ${state.filters.tipologia === 'Appartamento' ? 'selected' : ''}>Appartamento</option>
-                                <option value="Villa" ${state.filters.tipologia === 'Villa' ? 'selected' : ''}>Villa</option>
-                                <option value="Attico" ${state.filters.tipologia === 'Attico' ? 'selected' : ''}>Attico</option>
-                                <option value="Garage" ${state.filters.tipologia === 'Garage' ? 'selected' : ''}>Garage</option>
-                                <option value="Terreno" ${state.filters.tipologia === 'Terreno' ? 'selected' : ''}>Terreno</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Prezzo min</label>
-                            <input
-                                id="filter-prezzo-min"
-                                type="number"
-                                placeholder="€"
-                                value="${state.filters.prezzoMin}"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                            />
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Prezzo max</label>
-                            <input
-                                id="filter-prezzo-max"
-                                type="number"
-                                placeholder="€"
-                                value="${state.filters.prezzoMax}"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                            />
-                        </div>
-                        
-                        <div class="flex items-end">
-                            <button
-                                id="search-btn"
-                                ${state.isLoading ? 'disabled' : ''}
-                                class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3.5 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg font-medium ${state.isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl'}"
-                            >
-                                ${state.isLoading ? 
-                                    '<span class="flex items-center justify-center gap-2"><span class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span> Ricerca...</span>' : 
-                                    '<span class="flex items-center justify-center gap-2">🔍 Avvia Ricerca</span>'
-                                }
-                            </button>
-                        </div>
-                    </div>
-                    
-                    ${state.searchStatus ? `
-                    <div class="p-4 rounded-lg ${state.searchStatus.includes('✅') ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}">
-                        <div class="flex items-center gap-3">
-                            ${state.searchStatus.includes('✅') ? '✅' : 'ℹ️'}
-                            <p class="font-medium ${state.searchStatus.includes('✅') ? 'text-green-800' : 'text-blue-800'}">
-                                ${state.searchStatus}
-                            </p>
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    <div class="mt-6 pt-6 border-t border-gray-100">
-                        <div class="flex flex-wrap gap-2">
-                            <span class="text-xs font-medium text-gray-500">Portali monitorati:</span>
-                            ${SITES.map(site => `
-                                <span class="text-xs px-3 py-1.5 rounded-full ${getSourceColorClass(site.name)}">
-                                    ${site.icon} ${site.name}
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Mappa -->
-                ${state.searchResults.length > 0 ? `
-                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="bg-green-100 p-3 rounded-xl">
-                            <span class="text-2xl">🗺️</span>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-800">Mappa degli Annunci</h3>
-                            <p class="text-gray-600">Localizzazione geografica degli immobili</p>
-                        </div>
-                    </div>
-                    <div id="map" class="rounded-xl overflow-hidden border border-gray-200"></div>
-                    <p class="text-sm text-gray-500 mt-3">Clicca sui marker per i dettagli degli annunci</p>
-                </div>
-                ` : ''}
-
-                <!-- Risultati -->
-                ${state.searchResults.length > 0 ? `
-                <div>
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                        <div>
-                            <h3 class="text-2xl font-bold text-gray-800">${state.searchResults.length} Annunci Trovati</h3>
-                            <p class="text-gray-600">Risultati deduplicati automaticamente</p>
-                        </div>
-                        <div class="flex gap-3">
-                            <button onclick="exportAllToPDF()" class="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow flex items-center gap-2">
-                                📄 Esporta Tutto
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        ${state.searchResults.map(r => renderResultCard(r)).join('')}
-                    </div>
-                    
-                    ${state.searchResults.length >= 15 ? `
-                    <div class="mt-8 text-center">
-                        <button onclick="loadMoreResults()" class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
-                            📥 Carica altri annunci
-                        </button>
-                    </div>
-                    ` : ''}
-                </div>
-                ` : !state.isLoading ? `
-                <div class="bg-white rounded-2xl shadow-xl p-12 text-center border border-gray-100">
-                    <div class="inline-flex items-center justify-center w-24 h-24 bg-indigo-100 rounded-full mb-6">
-                        <span class="text-4xl">🔍</span>
-                    </div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-3">Nessuna ricerca effettuata</h3>
-                    <p class="text-gray-600 max-w-md mx-auto mb-8">
-                        Imposta i filtri di ricerca e clicca "Avvia Ricerca" per trovare annunci di aste immobiliari dai principali portali.
-                    </p>
-                    <div class="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg max-w-md mx-auto">
-                        <p class="font-medium mb-1">Funzionalità incluse:</p>
-                        <ul class="text-left space-y-1">
-                            <li>• Ricerca su 7 portali simultaneamente</li>
-                            <li>• Deduplicazione automatica degli annunci</li>
-                            <li>• Mappa interattiva con localizzazione</li>
-                            <li>• Esportazione PDF e CSV</li>
-                            <li>• Suggerimenti clienti compatibili</li>
-                        </ul>
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-            `;
-        }
-
         function renderClientsTab() {
+            const filteredClients = getFilteredClients();
+            
             return `
             <div class="space-y-8">
-                <!-- Clienti -->
+                <!-- Toolbar Clienti -->
                 <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                    <div class="flex items-center justify-between mb-8">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
                         <div class="flex items-center gap-4">
                             <div class="bg-purple-100 p-4 rounded-xl">
                                 <span class="text-2xl">👥</span>
                             </div>
                             <div>
                                 <h2 class="text-2xl font-bold text-gray-800">Gestione Clienti</h2>
-                                <p class="text-gray-600">Monitora i clienti e trova match automatici</p>
+                                <p class="text-gray-600">Schema conforme al file Excel</p>
                             </div>
                         </div>
-                        <button onclick="addNewClient()" class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow flex items-center gap-2">
-                            ➕ Nuovo Cliente
-                        </button>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${state.clients.map(client => renderClientCard(client)).join('')}
-                    </div>
-                    
-                    ${state.clients.length === 0 ? `
-                    <div class="text-center py-12">
-                        <div class="text-gray-400 text-6xl mb-4">👥</div>
-                        <h3 class="text-xl font-semibold text-gray-700 mb-2">Nessun cliente registrato</h3>
-                        <p class="text-gray-500 mb-6">Aggiungi il primo cliente per iniziare</p>
-                        <button onclick="addNewClient()" class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                            ➕ Aggiungi Primo Cliente
-                        </button>
-                    </div>
-                    ` : ''}
-                </div>
-
-                <!-- Statistiche -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                    <h3 class="text-xl font-bold text-gray-800 mb-6">📊 Statistiche e Analisi</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200">
-                            <p class="text-sm font-medium text-blue-700 mb-1">Budget Totale</p>
-                            <p class="text-3xl font-bold text-blue-800">
-                                €${state.clients.reduce((sum, c) => sum + c.budget, 0).toLocaleString('it-IT')}
-                            </p>
-                        </div>
-                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl border border-green-200">
-                            <p class="text-sm font-medium text-green-700 mb-1">Cerca Appartamenti</p>
-                            <p class="text-3xl font-bold text-green-800">
-                                ${state.clients.filter(c => c.preferenze.includes('Appartamento')).length}
-                            </p>
-                        </div>
-                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-xl border border-purple-200">
-                            <p class="text-sm font-medium text-purple-700 mb-1">Cerca Ville</p>
-                            <p class="text-3xl font-bold text-purple-800">
-                                ${state.clients.filter(c => c.preferenze.includes('Villa')).length}
-                            </p>
-                        </div>
-                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-xl border border-orange-200">
-                            <p class="text-sm font-medium text-orange-700 mb-1">Comune più ricercato</p>
-                            <p class="text-3xl font-bold text-orange-800">${getTopComune()}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-8 pt-8 border-t border-gray-100">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">📈 Distribuzione Budget</h4>
-                        <div class="space-y-3">
-                            ${state.clients.map(client => `
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                                            <span class="text-sm font-medium text-indigo-600">${client.name.charAt(0)}</span>
-                                        </div>
-                                        <span class="font-medium text-gray-700">${client.name}</span>
-                                    </div>
-                                    <div class="flex items-center gap-4">
-                                        <span class="text-gray-600">€${client.budget.toLocaleString('it-IT')}</span>
-                                        <div class="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                            <div class="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full" 
-                                                 style="width: ${(client.budget / 1000000 * 100)}%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            `;
-        }
-
-        function renderResultCard(result) {
-            const prezzoPerMq = result.metriQuadrati > 0 ? (result.prezzo / result.metriQuadrati).toFixed(2) : 'N/A';
-            
-            return `
-            <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden group">
-                <!-- Header -->
-                <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 border-b border-gray-200">
-                    <div class="flex justify-between items-start gap-4">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="text-xl">${getPropertyIcon(result.tipologia)}</span>
-                                <h3 class="text-xl font-bold text-gray-800">${result.tipologia}</h3>
-                            </div>
-                            <p class="text-gray-600 flex items-center gap-2">
-                                <span class="text-lg">📍</span>
-                                <span>${result.indirizzo}, ${result.comune}</span>
-                            </p>
-                        </div>
-                        <div class="text-right">
-                            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2.5 rounded-lg shadow">
-                                <p class="text-xl font-bold">€${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
-                                <p class="text-xs opacity-90">Prezzo base d'asta</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Fonti -->
-                    ${result.sources && result.sources.length > 0 ? `
-                    <div class="mt-4 pt-4 border-t border-gray-200">
-                        <p class="text-sm font-medium text-gray-700 mb-2">Disponibile su:</p>
-                        <div class="flex flex-wrap gap-1.5">
-                            ${result.sources.map((source, idx) => `
-                                <button 
-                                    onclick="openSourceLink('${result.id}', ${idx})"
-                                    class="${getSourceColorClass(source.site)} source-badge hover:scale-105 transition-transform"
-                                    title="Apri ${source.site}"
-                                >
-                                    ${getSourceIcon(source.site)} ${source.site}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-                
-                <!-- Contenuto -->
-                <div class="p-5">
-                    <div class="grid grid-cols-2 gap-3 mb-5">
-                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                            <p class="text-xs font-medium text-blue-600 mb-1">Metratura</p>
-                            <p class="text-lg font-bold text-blue-700">${result.metriQuadrati} m²</p>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-lg border border-green-100">
-                            <p class="text-xs font-medium text-green-600 mb-1">Locali</p>
-                            <p class="text-lg font-bold text-green-700">${result.locali}</p>
-                        </div>
-                        <div class="bg-purple-50 p-3 rounded-lg border border-purple-100">
-                            <p class="text-xs font-medium text-purple-600 mb-1">Prezzo/m²</p>
-                            <p class="text-lg font-bold text-purple-700">€${prezzoPerMq}</p>
-                        </div>
-                        <div class="bg-orange-50 p-3 rounded-lg border border-orange-100">
-                            <p class="text-xs font-medium text-orange-600 mb-1">Data Asta</p>
-                            <p class="text-lg font-bold text-orange-700">${result.dataAsta}</p>
-                        </div>
-                    </div>
-                    
-                    <p class="text-gray-600 mb-5 line-clamp-2">${result.descrizione}</p>
-                    
-                    <!-- Bottoni Azione -->
-                    <div class="grid grid-cols-3 gap-2">
-                        <button 
-                            onclick="exportAnnuncioToPDF(${result.id})"
-                            class="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn"
-                        >
-                            <span class="group-hover/btn:scale-110 transition-transform">📄</span>
-                            <span class="text-sm font-medium">PDF</span>
-                        </button>
-                        
-                        <button 
-                            onclick="showClientSuggestions(${result.id})"
-                            class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn"
-                        >
-                            <span class="group-hover/btn:scale-110 transition-transform">👥</span>
-                            <span class="text-sm font-medium">Clienti</span>
-                        </button>
-                        
-                        <button 
-                            onclick="showAnnuncioDetails(${result.id})"
-                            class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn"
-                        >
-                            <span class="group-hover/btn:scale-110 transition-transform">📊</span>
-                            <span class="text-sm font-medium">Dettagli</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            `;
-        }
-
-        function renderClientCard(client) {
-            return `
-            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center">
-                            <span class="text-xl font-bold text-indigo-600">${client.name.charAt(0)}</span>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-gray-800 text-lg">${client.name}</h4>
-                            <p class="text-sm text-gray-600">${client.email}</p>
-                        </div>
-                    </div>
-                    <span class="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium border border-green-200">
-                        €${client.budget.toLocaleString('it-IT')}
-                    </span>
-                </div>
-                
-                <div class="mb-4">
-                    <p class="text-sm font-medium text-gray-700 mb-2">Preferenze:</p>
-                    <div class="flex flex-wrap gap-1.5">
-                        ${client.preferenze.map(pref => `
-                            <span class="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1.5 rounded-lg border border-indigo-100">
-                                ${pref}
-                            </span>
-                        `).join('')}
-                    </div>
-                </div>
-                
-                <p class="text-sm text-gray-600 mb-5 italic border-l-4 border-indigo-200 pl-3 py-1 bg-indigo-50/50">
-                    "${client.note}"
-                </p>
-                
-                <div class="grid grid-cols-2 gap-2">
-                    <button 
-                        onclick="viewClientMatches('${client.id}')"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg transition-colors text-sm font-medium"
-                    >
-                        🔍 Trova match
-                    </button>
-                    <button 
-                        onclick="editClient('${client.id}')"
-                        class="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg transition-colors text-sm font-medium"
-                    >
-                        ✏️ Modifica
-                    </button>
-                </div>
-            </div>
-            `;
-        }
-
-        function renderModal() {
-            const modalContainer = document.getElementById('modal-container');
-            if (!state.selectedAnnuncio || !state.showClientSuggestions) {
-                modalContainer.innerHTML = '';
-                return;
-            }
-            
-            const annuncio = state.selectedAnnuncio;
-            const matchedClients = findMatchingClients(annuncio);
-            
-            modalContainer.innerHTML = `
-            <div class="modal-overlay">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden mx-4">
-                    <!-- Header -->
-                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h2 class="text-2xl font-bold">👥 Clienti Compatibili</h2>
-                                <div class="flex items-center gap-3 mt-2">
-                                    <div class="bg-white/20 px-3 py-1 rounded-full text-sm">
-                                        ${annuncio.tipologia}
-                                    </div>
-                                    <div class="bg-white/20 px-3 py-1 rounded-full text-sm">
-                                        ${annuncio.comune}
-                                    </div>
-                                    <div class="bg-white/20 px-3 py-1 rounded-full text-sm">
-                                        €${annuncio.prezzo.toLocaleString('it-IT')}
-                                    </div>
-                                </div>
-                            </div>
-                            <button onclick="closeModal()" class="text-white hover:text-gray-200 text-2xl bg-white/10 hover:bg-white/20 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
-                                ×
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="showImportModal()" 
+                                    class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow flex items-center gap-2">
+                                📁 Importa Excel
+                            </button>
+                            <button onclick="exportToExcel()" 
+                                    class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow flex items-center gap-2">
+                                📥 Esporta Excel
+                            </button>
+                            <button onclick="showAddClientModal()" 
+                                    class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow flex items-center gap-2">
+                                ➕ Nuovo Cliente
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Contenuto -->
-                    <div class="p-6 overflow-y-auto max-h-[60vh]">
-                        ${matchedClients.length > 0 ? `
-                            <div class="space-y-4">
-                                ${matchedClients.map(client => renderClientMatchCard(client, annuncio)).join('')}
-                            </div>
-                        ` : `
-                            <div class="text-center py-12">
-                                <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-                                    <span class="text-4xl">😔</span>
-                                </div>
-                                <h3 class="text-xl font-semibold text-gray-700 mb-3">Nessun cliente compatibile trovato</h3>
-                                <p class="text-gray-500 max-w-md mx-auto">
-                                    Questo annuncio non corrisponde alle preferenze dei clienti registrati.
-                                    Modifica i criteri o aggiungi nuovi clienti.
-                                </p>
-                            </div>
-                        `}
+                    <!-- Filtri -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Filtra per zona</label>
+                            <select id="filter-zona" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Tutte le zone</option>
+                                ${Object.entries(nomiZone).map(([code, name]) => `
+                                    <option value="${code}" ${state.clientFilters.zona === code ? 'selected' : ''}>
+                                        ${code} - ${name}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Stato</label>
+                            <select id="filter-attivo" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Tutti</option>
+                                <option value="SI" ${state.clientFilters.attivo === 'SI' ? 'selected' : ''}>Attivi</option>
+                                <option value="NO" ${state.clientFilters.attivo === 'NO' ? 'selected' : ''}>Non attivi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Cerca</label>
+                            <input type="text" 
+                                   id="filter-search" 
+                                   placeholder="Cognome, Nome, Comune..."
+                                   value="${state.clientFilters.search}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
                     </div>
                     
-                    <!-- Footer -->
-                    <div class="border-t border-gray-200 p-6 bg-gray-50">
-                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <div>
-                                <p class="text-gray-600 text-sm">
-                                    <span class="font-medium">${matchedClients.length}</span> clienti compatibili trovati
-                                </p>
-                                ${matchedClients.length > 0 ? `
-                                <p class="text-xs text-gray-500 mt-1">
-                                    Match basato su: tipologia, comune, budget e preferenze
-                                </p>
-                                ` : ''}
-                            </div>
-                            <div class="flex gap-3">
-                                ${matchedClients.length > 0 ? `
-                                <button onclick="exportMatchesToPDF(${annuncio.id})" 
-                                        class="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow flex items-center gap-2">
-                                    📄 Esporta Report
-                                </button>
-                                ` : ''}
-                                <button onclick="closeModal()" 
-                                        class="px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                                    Chiudi
-                                </button>
-                            </div>
+                    <!-- Statistiche -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+                            <p class="text-sm font-medium text-blue-700 mb-1">Totali</p>
+                            <p class="text-2xl font-bold text-blue-800">${state.clients.length}</p>
                         </div>
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+                            <p class="text-sm font-medium text-green-700 mb-1">Attivi</p>
+                            <p class="text-2xl font-bold text-green-800">${getClientiAttivi()}</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+                            <p class="text-sm font-medium text-purple-700 mb-1">Zone coperte</p>
+                            <p class="text-2xl font-bold text-purple-800">${getZoneCoperte()}</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
+                            <p class="text-sm font-medium text-orange-700 mb-1">Ultimo codice</p>
+                            <p class="text-2xl font-bold text-orange-800">${getUltimoCodice()}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabella Clienti -->
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 border-b">
+                                <tr>
+                                    <th class="py-4 px-4 text-left text-sm font-semibold text-gray-700">CODICE</th>
+                                    <th class="py-4 px-4 text-left text-sm font-semibold text-gray-700">COGNOME</th>
+                                    <th class="py-4 px-4 text-left text-sm font-semibold text-gray-700">NOME</th>
+                                    <th class="py-4 px-4 text-left text-sm font-semibold text-gray-700">TELEFONO</th>
+                                    <th class="py-4 px-4 text-left text-sm font-semibold text-gray-700">MAIL</th>
+                                    <th class="py-4 px-4 text-left text-sm font-semibold text-gray-700">ATTIVO</th>
+                                    <th class="py-4 px-4 text-left text-sm font-semibold text-gray-700">AREA INTERESSE</th>
+                                    <th class="py-4 px-4 text-left text-sm font-semibold text-gray-700">ZONA</th>
+                                    <th class="py-4 px-4 text-left text-sm font-semibold text-gray-700">AZIONI</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                ${filteredClients.length > 0 ? 
+                                    filteredClients.map(client => renderClientRow(client)).join('') :
+                                    `<tr><td colspan="9" class="py-8 text-center text-gray-500">Nessun cliente trovato</td></tr>`
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    ${filteredClients.length > 0 ? `
+                    <div class="px-6 py-4 border-t bg-gray-50 flex justify-between items-center">
+                        <p class="text-sm text-gray-600">
+                            Mostrati ${filteredClients.length} di ${state.clients.length} clienti
+                        </p>
+                        <div class="text-sm text-gray-600">
+                            Zona 1: Città | Zona 7: Bassa Bresciana
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <!-- Legenda Zone -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">🗺️ Legenda Zone Provincia di Brescia</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        ${Object.entries(nomiZone).map(([code, name]) => `
+                            <div class="flex items-center gap-2 p-3 rounded-lg border ${code === '1' ? 'border-blue-200 bg-blue-50' : code === '7' ? 'border-green-200 bg-green-50' : 'border-gray-200'}">
+                                <span class="font-bold ${code === '1' ? 'text-blue-700' : code === '7' ? 'text-green-700' : 'text-gray-700'}">${code}</span>
+                                <span class="text-sm text-gray-600">${name}</span>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             </div>
             `;
-            
-            // Aggiungi listener per chiudere cliccando sull'overlay
-            setTimeout(() => {
-                const overlay = document.querySelector('.modal-overlay');
-                if (overlay) {
-                    overlay.onclick = (e) => {
-                        if (e.target === overlay) closeModal();
-                    };
-                }
-            }, 100);
         }
 
-        function renderClientMatchCard(client, annuncio) {
-            const matchScore = calculateMatchScore(client, annuncio);
-            const budgetDiff = annuncio.prezzo - client.budget;
-            const matchColor = matchScore >= 80 ? 'green' : matchScore >= 60 ? 'yellow' : 'red';
-            const matchColors = {
-                green: { bg: 'from-green-50 to-emerald-50', border: 'border-green-200', text: 'text-green-800' },
-                yellow: { bg: 'from-yellow-50 to-amber-50', border: 'border-yellow-200', text: 'text-yellow-800' },
-                red: { bg: 'from-red-50 to-pink-50', border: 'border-red-200', text: 'text-red-800' }
-            };
-            
+        function renderImportTab() {
             return `
-            <div class="bg-gradient-to-br ${matchColors[matchColor].bg} border ${matchColors[matchColor].border} rounded-xl p-5 hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 bg-white rounded-xl border ${matchColors[matchColor].border} flex items-center justify-center shadow-sm">
-                            <span class="text-2xl">👤</span>
+            <div class="space-y-8">
+                <!-- Importazione Excel -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="bg-green-100 p-4 rounded-xl">
+                            <span class="text-2xl">📁</span>
                         </div>
                         <div>
-                            <h4 class="font-bold text-gray-800 text-lg">${client.name}</h4>
-                            <p class="text-sm text-gray-600">${client.email}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <span class="px-4 py-2 rounded-full text-sm font-bold ${matchColors[matchColor].text} bg-white border ${matchColors[matchColor].border}">
-                            ${matchScore}% Match
-                        </span>
-                        <p class="text-xs text-gray-500 mt-1">Compatibilità</p>
-                    </div>
-                </div>
-                
-                <div class="space-y-3 mb-4">
-                    <!-- Budget -->
-                    <div class="flex items-center justify-between bg-white/70 p-3 rounded-lg border border-gray-200">
-                        <div class="flex items-center gap-2">
-                            <span class="text-gray-700">💰 Budget cliente:</span>
-                        </div>
-                        <span class="font-bold ${budgetDiff <= 0 ? 'text-green-600' : 'text-red-600'}">
-                            €${client.budget.toLocaleString('it-IT')} 
-                            ${budgetDiff <= 0 ? 
-                                '<span class="text-green-500 text-sm">✓ Nel budget</span>' : 
-                                `<span class="text-red-500 text-sm">+€${Math.abs(budgetDiff).toLocaleString('it-IT')}</span>`
-                            }
-                        </span>
-                    </div>
-                    
-                    <!-- Preferenze match -->
-                    <div class="bg-white/70 p-3 rounded-lg border border-gray-200">
-                        <p class="text-sm font-medium text-gray-700 mb-2">✅ Preferenze corrispondenti:</p>
-                        <div class="flex flex-wrap gap-1.5">
-                            ${client.preferenze
-                                .filter(pref => 
-                                    annuncio.tipologia.includes(pref) || 
-                                    annuncio.comune.includes(pref) ||
-                                    pref.includes(annuncio.tipologia) ||
-                                    pref.includes(annuncio.comune)
-                                )
-                                .map(pref => `
-                                    <span class="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 text-xs px-3 py-1.5 rounded-lg border border-green-200 flex items-center gap-1">
-                                        <span class="text-xs">✓</span> ${pref}
-                                    </span>
-                                `).join('')}
-                            ${client.preferenze
-                                .filter(pref => 
-                                    !annuncio.tipologia.includes(pref) && 
-                                    !annuncio.comune.includes(pref) &&
-                                    !pref.includes(annuncio.tipologia) &&
-                                    !pref.includes(annuncio.comune)
-                                )
-                                .slice(0, 2)
-                                .map(pref => `
-                                    <span class="bg-gray-100 text-gray-600 text-xs px-3 py-1.5 rounded-lg border border-gray-200">
-                                        ${pref}
-                                    </span>
-                                `).join('')}
+                            <h2 class="text-2xl font-bold text-gray-800">Importazione da Excel</h2>
+                            <p class="text-gray-600">Carica il tuo file Excel con i clienti</p>
                         </div>
                     </div>
                     
-                    <!-- Note -->
-                    <div class="bg-white/70 p-3 rounded-lg border border-gray-200">
-                        <p class="text-sm text-gray-600 italic">"${client.note}"</p>
+                    <!-- Dropzone per file -->
+                    <div class="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-indigo-400 transition-colors bg-gray-50/50"
+                         id="dropzone"
+                         ondrop="handleDrop(event)"
+                         ondragover="handleDragOver(event)"
+                         ondragleave="handleDragLeave(event)">
+                        <div class="max-w-md mx-auto">
+                            <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl">📂</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Trascina il file Excel qui</h3>
+                            <p class="text-gray-600 mb-4">Supporta il formato .xlsx con schema clienti</p>
+                            <input type="file" 
+                                   id="file-input" 
+                                   accept=".xlsx,.xls"
+                                   class="hidden"
+                                   onchange="handleFileSelect(event)">
+                            <button onclick="document.getElementById('file-input').click()"
+                                    class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg font-medium">
+                                🗂️ Seleziona File
+                            </button>
+                            <p class="text-sm text-gray-500 mt-4">Oppure trascina il file qui sopra</p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="pt-4 border-t border-gray-200">
-                    <button 
-                        onclick="sendProposalToClient('${client.id}', ${annuncio.id})"
-                        class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 rounded-lg transition-all shadow hover:shadow-lg font-medium flex items-center justify-center gap-2"
-                    >
-                        <span>📧</span>
-                        <span>Invia Proposta al Cliente</span>
-                    </button>
+                    
+                    <!-- Istruzioni -->
+                    <div class="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
+                        <h4 class="font-bold text-blue-800 mb-3">📋 Schema richiesto (esatto):</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                                <thead class="bg-blue-100">
+                                    <tr>
+                                        <th class="py-2 px-3 text-left text-sm font-medium text-blue-800 border">COGNOME</th>
+                                        <th class="py-2 px-3 text-left text-sm font-medium text-blue-800 border">NOME</th>
+                                        <th class="py-2 px-3 text-left text-sm font-medium text-blue-800 border">CUSTOMER CODE</th>
+                                        <th class="py-2 px-3 text-left text-sm font-medium text-blue-800 border">TELEFONO</th>
+                                        <th class="py-2 px-3 text-left text-sm font-medium text-blue-800 border">MAIL</th>
+                                        <th class="py-2 px-3 text-left text-sm font-medium text-blue-800 border">ATTIVI?</th>
+                                        <th class="py-2 px-3 text-left text-sm font-medium text-blue-800 border">AREA D'INTERESSE</th>
+                                        <th class="py-2 px-3 text-left text-sm font-medium text-blue-800 border">ZONA</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="py-2 px-3 border text-sm">Rossi</td>
+                                        <td class="py-2 px-3 border text-sm">Mario</td>
+                                        <td class="py-2 px-3 border text-sm">1</td>
+                                        <td class="py-2 px-3 border text-sm">1234567890</td>
+                                        <td class="py-2 px-3 border text-sm">mario@email.com</td>
+                                        <td class="py-2 px-3 border text-sm">SI</td>
+                                        <td class="py-2 px-3 border text-sm">Brescia centro</td>
+                                        <td class="py-2 px-3 border text-sm">1</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-sm text-blue-700 mt-3">
+                            <strong>Nota:</strong> La colonna ZONA può essere vuota, verrà calcolata automaticamente dal comune nell'AREA D'INTERESSE
+                        </p>
+                    </div>
+                    
+                    <!-- Dati importati -->
+                    ${state.importedData ? `
+                    <div class="mt-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">Anteprima dati importati</h3>
+                            <div class="flex gap-2">
+                                <button onclick="confirmImport()" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                    ✅ Conferma Import
+                                </button>
+                                <button onclick="clearImport()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                                    ❌ Annulla
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto border rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        ${Object.keys(state.importedData[0] || {}).map(col => `
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">${col}</th>
+                                        `).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${state.importedData.slice(0, 5).map(row => `
+                                        <tr class="hover:bg-gray-50">
+                                            ${Object.values(row).map(val => `
+                                                <td class="px-4 py-3 text-sm">${val || ''}</td>
+                                            `).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            ${state.importedData.length > 5 ? `
+                                <div class="px-4 py-3 bg-gray-50 text-sm text-gray-500 border-t">
+                                    + ${state.importedData.length - 5} altre righe...
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
+            `;
+        }
+
+        function renderClientRow(client) {
+            return `
+            <tr class="client-row hover:bg-gray-50">
+                <td class="py-3 px-4">
+                    <span class="font-mono font-bold text-indigo-600">${client.CUSTOMER_CODE}</span>
+                </td>
+                <td class="py-3 px-4 font-medium">${client.COGNOME}</td>
+                <td class="py-3 px-4">${client.NOME}</td>
+                <td class="py-3 px-4 font-mono text-sm">${client.TELEFONO}</td>
+                <td class="py-3 px-4">
+                    ${client.MAIL ? `
+                        <a href="mailto:${client.MAIL}" class="text-blue-600 hover:text-blue-800 text-sm truncate block max-w-[150px]">
+                            ${client.MAIL}
+                        </a>
+                    ` : '<span class="text-gray-400">—</span>'}
+                </td>
+                <td class="py-3 px-4">
+                    <span class="px-3 py-1 rounded-full text-xs font-medium ${client.ATTIVI === 'SI' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        ${client.ATTIVI}
+                    </span>
+                </td>
+                <td class="py-3 px-4 text-sm">${client.AREA_INTERESSE || ''}</td>
+                <td class="py-3 px-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full ${getZonaColor(client.ZONA)} flex items-center justify-center text-xs font-bold">
+                            ${client.ZONA || '?'}
+                        </span>
+                        ${client.ZONA ? `<span class="text-xs text-gray-600">${nomiZone[client.ZONA] || ''}</span>` : ''}
+                    </div>
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex gap-2">
+                        <button onclick="editClient('${client.CUSTOMER_CODE}')" 
+                                class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Modifica">
+                            ✏️
+                        </button>
+                        <button onclick="deleteClient('${client.CUSTOMER_CODE}')" 
+                                class="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Elimina">
+                            🗑️
+                        </button>
+                    </div>
+                </td>
+            </tr>
             `;
         }
 
         // Funzioni di supporto
-        function getSourceColorClass(site) {
-            const siteObj = SITES.find(s => s.name === site);
-            if (!siteObj) return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
-            return `bg-${siteObj.color}-100 text-${siteObj.color}-800 hover:bg-${siteObj.color}-200`;
-        }
-
-        function getSourceIcon(site) {
-            const siteObj = SITES.find(s => s.name === site);
-            return siteObj ? siteObj.icon : '🔗';
-        }
-
-        function getPropertyIcon(tipologia) {
-            const icons = {
-                'Appartamento': '🏠',
-                'Villa': '🏡',
-                'Attico': '🏢',
-                'Loft': '🏭',
-                'Garage': '🚗',
-                'Terreno': '🌳'
+        function getZonaColor(zona) {
+            const colors = {
+                '1': 'bg-blue-100 text-blue-800 border border-blue-200',
+                '7': 'bg-green-100 text-green-800 border border-green-200',
+                '2': 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+                '3': 'bg-purple-100 text-purple-800 border border-purple-200',
+                '4': 'bg-red-100 text-red-800 border border-red-200',
+                '5': 'bg-indigo-100 text-indigo-800 border border-indigo-200',
+                '6': 'bg-pink-100 text-pink-800 border border-pink-200',
+                '8': 'bg-orange-100 text-orange-800 border border-orange-200'
             };
-            return icons[tipologia] || '🏘️';
+            return colors[zona] || 'bg-gray-100 text-gray-800 border border-gray-200';
         }
 
-        function getTopComune() {
-            const comuniCount = {};
-            state.clients.forEach(client => {
-                client.preferenze.forEach(pref => {
-                    if (Object.keys(coordinateComuni).includes(pref)) {
-                        comuniCount[pref] = (comuniCount[pref] || 0) + 1;
-                    }
-                });
-            });
-            
-            const top = Object.entries(comuniCount).sort((a, b) => b[1] - a[1])[0];
-            return top ? top[0] : 'Nessuno';
+        function getClientiAttivi() {
+            return state.clients.filter(c => c.ATTIVI === 'SI').length;
         }
 
-        function calculateMatchScore(client, annuncio) {
-            let score = 0;
-            
-            // Match tipologia (40%)
-            if (client.preferenze.some(p => annuncio.tipologia.includes(p) || p.includes(annuncio.tipologia))) {
-                score += 40;
-            }
-            
-            // Match comune (30%)
-            if (client.preferenze.some(p => annuncio.comune.includes(p) || p.includes(annuncio.comune))) {
-                score += 30;
-            }
-            
-            // Match budget (30%)
-            const budgetDiff = annuncio.prezzo - client.budget;
-            if (budgetDiff <= 0) {
-                score += 30; // Nel budget
-            } else if (budgetDiff <= client.budget * 0.2) {
-                score += 20; // 20% sopra budget
-            } else if (budgetDiff <= client.budget * 0.5) {
-                score += 10; // 50% sopra budget
-            }
-            
-            return Math.min(100, Math.round(score));
+        function getZoneCoperte() {
+            const zone = new Set(state.clients.map(c => c.ZONA).filter(z => z));
+            return zone.size;
         }
 
-        function findMatchingClients(annuncio) {
-            return state.clients
-                .map(client => ({
-                    client,
-                    score: calculateMatchScore(client, annuncio)
-                }))
-                .filter(item => item.score >= 50)
-                .sort((a, b) => b.score - a.score)
-                .map(item => item.client);
+        function getUltimoCodice() {
+            if (state.clients.length === 0) return '0';
+            const codici = state.clients.map(c => parseInt(c.CUSTOMER_CODE) || 0);
+            return Math.max(...codici);
+        }
+
+        function getFilteredClients() {
+            let filtered = [...state.clients];
+            
+            if (state.clientFilters.zona) {
+                filtered = filtered.filter(c => c.ZONA === state.clientFilters.zona);
+            }
+            
+            if (state.clientFilters.attivo) {
+                filtered = filtered.filter(c => c.ATTIVI === state.clientFilters.attivo);
+            }
+            
+            if (state.clientFilters.search) {
+                const search = state.clientFilters.search.toLowerCase();
+                filtered = filtered.filter(c => 
+                    c.COGNOME.toLowerCase().includes(search) ||
+                    c.NOME.toLowerCase().includes(search) ||
+                    c.AREA_INTERESSE.toLowerCase().includes(search) ||
+                    c.CUSTOMER_CODE.includes(search)
+                );
+            }
+            
+            return filtered;
         }
 
         // Funzioni principali
@@ -921,41 +655,45 @@
             
             // Main app
             const logoutBtn = document.getElementById('logout-btn');
-            const tabSearch = document.getElementById('tab-search');
             const tabClients = document.getElementById('tab-clients');
-            const searchBtn = document.getElementById('search-btn');
+            const tabImport = document.getElementById('tab-import');
             
             if (logoutBtn) logoutBtn.onclick = handleLogout;
-            if (tabSearch) tabSearch.onclick = () => { 
-                state.activeTab = 'search'; 
-                state.showClientSuggestions = false;
-                state.selectedAnnuncio = null;
-                render(); 
-            };
             if (tabClients) tabClients.onclick = () => { 
                 state.activeTab = 'clients'; 
-                state.showClientSuggestions = false;
-                state.selectedAnnuncio = null;
                 render(); 
             };
-            if (searchBtn) searchBtn.onclick = performSearch;
+            if (tabImport) tabImport.onclick = () => { 
+                state.activeTab = 'import'; 
+                render(); 
+            };
             
-            // Filters
-            const filterComune = document.getElementById('filter-comune');
-            const filterTipologia = document.getElementById('filter-tipologia');
-            const filterPrezzoMin = document.getElementById('filter-prezzo-min');
-            const filterPrezzoMax = document.getElementById('filter-prezzo-max');
+            // Filtri clienti
+            const filterZona = document.getElementById('filter-zona');
+            const filterAttivo = document.getElementById('filter-attivo');
+            const filterSearch = document.getElementById('filter-search');
             
-            if (filterComune) filterComune.oninput = (e) => { state.filters.comune = e.target.value; };
-            if (filterTipologia) filterTipologia.onchange = (e) => { state.filters.tipologia = e.target.value; };
-            if (filterPrezzoMin) filterPrezzoMin.oninput = (e) => { state.filters.prezzoMin = e.target.value; };
-            if (filterPrezzoMax) filterPrezzoMax.oninput = (e) => { state.filters.prezzoMax = e.target.value; };
+            if (filterZona) filterZona.onchange = (e) => { 
+                state.clientFilters.zona = e.target.value;
+                render();
+            };
+            if (filterAttivo) filterAttivo.onchange = (e) => { 
+                state.clientFilters.attivo = e.target.value;
+                render();
+            };
+            if (filterSearch) {
+                filterSearch.oninput = debounce((e) => {
+                    state.clientFilters.search = e.target.value;
+                    render();
+                }, 300);
+            }
         }
 
         function handleLogin() {
             if (state.password === MASTER_PASSWORD) {
                 state.isAuthenticated = true;
                 state.password = '';
+                loadInitialData();
                 render();
             } else {
                 alert('Password non corretta. Usa: aste2025');
@@ -964,571 +702,580 @@
 
         function handleLogout() {
             state.isAuthenticated = false;
-            state.searchResults = [];
-            state.showClientSuggestions = false;
-            state.selectedAnnuncio = null;
             render();
         }
 
-        function performSearch() {
-            console.log("🔍 AVVIO RICERCA AVANZATA");
-            state.isLoading = true;
-            state.searchStatus = 'Ricerca in corso su 7 portali...';
-            render();
-            
-            // Simula ricerca asincrona
-            setTimeout(() => {
-                // Genera dati mock con deduplicazione
-                const rawResults = generateMockResults();
-                
-                // Deduplica risultati (stesso comune, indirizzo, prezzo e data asta)
-                const deduplicatedResults = deduplicateResults(rawResults);
-                
-                state.searchResults = deduplicatedResults;
-                state.isLoading = false;
-                state.searchStatus = `✅ Trovati ${deduplicatedResults.length} annunci univoci (da ${rawResults.length} totali)`;
-                render();
-                
-                // Inizializza mappa
-                initMap();
-            }, 1500);
-        }
-
-        function generateMockResults() {
-            const comuneFiltro = state.filters.comune || '';
-            const tipologiaFiltro = state.filters.tipologia || '';
-            const prezzoMin = parseInt(state.filters.prezzoMin) || 0;
-            const prezzoMax = parseInt(state.filters.prezzoMax) || 10000000;
-            
-            const comuni = comuneFiltro ? [comuneFiltro] : Object.keys(coordinateComuni);
-            const tipologie = tipologiaFiltro ? [tipologiaFiltro] : ['Appartamento', 'Villa', 'Attico', 'Garage', 'Terreno'];
-            
-            const caratteristiche = [
-                'Con giardino privato', 'Box auto incluso', 'In centro storico', 
-                'Zona residenziale tranquilla', 'Vista panoramica', 'Con piscina',
-                'A due passi dal mare', 'Con ampio terrazzo', 'Recentemente ristrutturato',
-                'Classe energetica A4', 'Con cantina', 'Doppi servizi', 'Impianto fotovoltaico'
-            ];
-            
-            const condizioni = [
-                'Ottime condizioni', 'Da ristrutturare completamente', 'Nuovo di costruzione',
-                'Parzialmente ristrutturato', 'Libero immediatamente', 'In classe A',
-                'Con certificazione energetica', 'Pronto per abitare'
-            ];
-            
-            const results = [];
-            const numResults = Math.floor(Math.random() * 15) + 10; // 10-25 risultati
-            
-            for (let i = 0; i < numResults; i++) {
-                const comune = comuni[Math.floor(Math.random() * comuni.length)];
-                const tipologia = tipologie[Math.floor(Math.random() * tipologie.length)];
-                const prezzo = Math.floor(Math.random() * (prezzoMax - prezzoMin)) + prezzoMin;
-                
-                if (prezzo < prezzoMin || prezzo > prezzoMax) continue;
-                
-                // Genera 1-3 fonti diverse per lo stesso annuncio
-                const numSources = Math.floor(Math.random() * 3) + 1;
-                const shuffledSites = [...SITES].sort(() => Math.random() - 0.5);
-                const sources = shuffledSites.slice(0, numSources).map(site => ({
-                    site: site.name,
-                    url: `https://${site.name.toLowerCase().replace('.it', '').replace(' ', '')}.it/annuncio-${Math.floor(Math.random() * 10000)}`
-                }));
-                
-                // Crea chiave unica per deduplicazione
-                const uniqueKey = `${comune}_${tipologia}_${Math.floor(prezzo / 10000) * 10000}`;
-                
-                results.push({
-                    id: i + 1,
-                    tipologia: tipologia,
-                    indirizzo: `Via ${['Roma', 'Milano', 'Venezia', 'Garibaldi', 'Dante', 'Vittorio Emanuele'][Math.floor(Math.random() * 6)]} ${Math.floor(Math.random() * 200) + 1}`,
-                    comune: comune,
-                    prezzo: prezzo,
-                    descrizione: `${tipologia} di ${Math.floor(Math.random() * 300) + 50} mq a ${comune}, ${condizioni[Math.floor(Math.random() * condizioni.length)]}. ${caratteristiche[Math.floor(Math.random() * caratteristiche.length)]}. Posizione ${['centrale', 'periferica', 'residenziale', 'commerciale'][Math.floor(Math.random() * 4)]}.`,
-                    dataAsta: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-                    fonte: sources[0].site,
-                    sources: sources,
-                    link: sources[0].url,
-                    metriQuadrati: Math.floor(Math.random() * 300) + 50,
-                    locali: Math.floor(Math.random() * 6) + 1,
-                    uniqueKey: uniqueKey,
-                    coordinate: coordinateComuni[comune] || MAP_CENTER
-                });
+        // Gestione file Excel
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processExcelFile(file);
             }
-            
-            return results;
         }
 
-        function deduplicateResults(results) {
-            const seen = new Set();
-            const deduplicated = [];
+        function handleDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
             
-            for (const result of results) {
-                // Crea una chiave basata su: comune, indirizzo approssimato, prezzo simile (±10%), data asta
-                const key = `${result.comune}_${result.indirizzo.split(' ')[0]}_${Math.floor(result.prezzo / 10000)}_${result.dataAsta}`;
-                
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    deduplicated.push(result);
+            const dropzone = event.currentTarget;
+            dropzone.classList.remove('border-indigo-400', 'bg-indigo-50');
+            dropzone.classList.add('border-gray-300');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.name.match(/\.(xlsx|xls)$/i)) {
+                    processExcelFile(file);
                 } else {
-                    // Se duplicato, aggiungi la fonte alla versione esistente
-                    const existing = deduplicated.find(r => 
-                        `${r.comune}_${r.indirizzo.split(' ')[0]}_${Math.floor(r.prezzo / 10000)}_${r.dataAsta}` === key
-                    );
-                    if (existing && result.sources) {
-                        result.sources.forEach(source => {
-                            if (!existing.sources.some(s => s.site === source.site)) {
-                                existing.sources.push(source);
+                    alert('Per favore carica solo file Excel (.xlsx o .xls)');
+                }
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropzone = event.currentTarget;
+            dropzone.classList.remove('border-gray-300');
+            dropzone.classList.add('border-indigo-400', 'bg-indigo-50');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropzone = event.currentTarget;
+            dropzone.classList.remove('border-indigo-400', 'bg-indigo-50');
+            dropzone.classList.add('border-gray-300');
+        }
+
+        function processExcelFile(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Prende il primo foglio
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    // Converti in array di oggetti
+                    const headers = jsonData[0];
+                    const rows = jsonData.slice(1);
+                    
+                    const importedClients = rows.map(row => {
+                        const client = {};
+                        headers.forEach((header, index) => {
+                            if (header && row[index] !== undefined) {
+                                // Normalizza i nomi delle colonne
+                                const normalizedHeader = header
+                                    .replace('CUSTOMER<br>CODE', 'CUSTOMER_CODE')
+                                    .replace('CUSTOMER CODE', 'CUSTOMER_CODE')
+                                    .replace('AREA D\'INTERESSE', 'AREA_INTERESSE')
+                                    .replace('ATTIVI?', 'ATTIVI')
+                                    .trim()
+                                    .replace(/\s+/g, '_')
+                                    .toUpperCase();
+                                
+                                client[normalizedHeader] = row[index];
                             }
                         });
-                    }
+                        
+                        // Calcola zona se non presente
+                        if (!client.ZONA && client.AREA_INTERESSE) {
+                            const zona = calcolaZonaDaArea(client.AREA_INTERESSE);
+                            if (zona) client.ZONA = zona.toString();
+                        }
+                        
+                        return client;
+                    }).filter(client => client.COGNOME && client.NOME); // Filtra righe vuote
+                    
+                    state.importedData = importedClients;
+                    render();
+                    
+                } catch (error) {
+                    console.error('Errore nella lettura del file Excel:', error);
+                    alert('Errore nella lettura del file Excel. Controlla il formato.');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function calcolaZonaDaArea(areaInteresse) {
+            if (!areaInteresse) return null;
+            
+            const areaLower = areaInteresse.toLowerCase();
+            
+            // Cerca comuni nella mappa
+            for (const [comune, zona] of Object.entries(zoneComuni)) {
+                if (areaLower.includes(comune.toLowerCase())) {
+                    return zona;
                 }
             }
             
-            return deduplicated;
+            // Ricerca per parole chiave
+            if (areaLower.includes('brescia')) return 1;
+            if (areaLower.includes('barbariga')) return 7;
+            if (areaLower.includes('gardone')) return 2;
+            if (areaLower.includes('iseo')) return 3;
+            
+            return null;
         }
 
-        function initMap() {
-            if (map) {
-                map.remove();
+        function confirmImport() {
+            if (!state.importedData || state.importedData.length === 0) {
+                alert('Nessun dato da importare');
+                return;
             }
             
-            map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
+            // Controlla duplicati
+            const nuoviCodici = new Set(state.importedData.map(c => c.CUSTOMER_CODE));
+            const codiciEsistenti = new Set(state.clients.map(c => c.CUSTOMER_CODE));
+            const duplicati = [...nuoviCodici].filter(codice => codiciEsistenti.has(codice));
             
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(map);
+            if (duplicati.length > 0) {
+                const sovrascrivere = confirm(`Trovati ${duplicati.length} codici cliente già esistenti.\nVuoi sovrascrivere i clienti esistenti?`);
+                
+                if (sovrascrivere) {
+                    // Rimuovi i duplicati esistenti
+                    state.clients = state.clients.filter(client => 
+                        !duplicati.includes(client.CUSTOMER_CODE)
+                    );
+                } else {
+                    // Assegna nuovi codici ai duplicati
+                    state.importedData.forEach(client => {
+                        if (duplicati.includes(client.CUSTOMER_CODE)) {
+                            let nuovoCodice = (parseInt(getUltimoCodice()) + 1).toString();
+                            while (codiciEsistenti.has(nuovoCodice)) {
+                                nuovoCodice = (parseInt(nuovoCodice) + 1).toString();
+                            }
+                            client.CUSTOMER_CODE = nuovoCodice;
+                        }
+                    });
+                }
+            }
             
-            // Aggiungi marker per ogni annuncio
-            state.searchResults.forEach(result => {
-                if (result.coordinate) {
-                    const marker = L.marker(result.coordinate).addTo(map);
-                    marker.bindPopup(`
-                        <div style="min-width: 200px;">
-                            <strong>${result.tipologia}</strong><br>
-                            <small>${result.indirizzo}, ${result.comune}</small><br>
-                            <strong>€${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</strong><br>
-                            <small>Asta: ${result.dataAsta}</small><br>
-                            <button onclick="showAnnuncioDetails(${result.id})" 
-                                    style="margin-top: 5px; padding: 5px 10px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                Dettagli
+            // Aggiungi i nuovi clienti
+            state.clients.push(...state.importedData);
+            saveData();
+            
+            alert(`✅ Importati ${state.importedData.length} clienti con successo!`);
+            state.importedData = null;
+            state.activeTab = 'clients';
+            render();
+        }
+
+        function clearImport() {
+            state.importedData = null;
+            render();
+        }
+
+        // Esportazione Excel
+        function exportToExcel() {
+            if (state.clients.length === 0) {
+                alert('Nessun cliente da esportare');
+                return;
+            }
+            
+            // Prepara i dati nel formato Excel
+            const headers = ['COGNOME', 'NOME', 'CUSTOMER CODE', 'TELEFONO', 'MAIL', 'ATTIVI?', 'AREA D\'INTERESSE', 'ZONA'];
+            const data = state.clients.map(client => [
+                client.COGNOME,
+                client.NOME,
+                client.CUSTOMER_CODE,
+                client.TELEFONO,
+                client.MAIL,
+                client.ATTIVI,
+                client.AREA_INTERESSE,
+                client.ZONA
+            ]);
+            
+            // Crea workbook
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+            
+            // Imposta larghezza colonne
+            const colWidths = [
+                { wch: 15 }, // COGNOME
+                { wch: 15 }, // NOME
+                { wch: 12 }, // CUSTOMER CODE
+                { wch: 15 }, // TELEFONO
+                { wch: 25 }, // MAIL
+                { wch: 8 },  // ATTIVI?
+                { wch: 30 }, // AREA D'INTERESSE
+                { wch: 8 }   // ZONA
+            ];
+            ws['!cols'] = colWidths;
+            
+            XLSX.utils.book_append_sheet(wb, ws, 'Clienti');
+            
+            // Esporta
+            const fileName = `clienti_brescia_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            alert(`✅ Esportati ${state.clients.length} clienti in ${fileName}`);
+        }
+
+        // Gestione clienti
+        function showAddClientModal() {
+            const modalContent = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-bold">➕ Nuovo Cliente</h2>
+                                <p class="text-indigo-200">Compila tutti i campi come nel file Excel</p>
+                            </div>
+                            <button onclick="closeModal()" class="text-white hover:text-gray-200 text-2xl">
+                                ×
                             </button>
                         </div>
-                    `);
-                }
-            });
-            
-            // Adatta la vista ai marker
-            if (state.searchResults.length > 0) {
-                const bounds = L.latLngBounds(state.searchResults.map(r => r.coordinate).filter(c => c));
-                map.fitBounds(bounds, { padding: [50, 50] });
-            }
-        }
-
-        // Funzioni di interazione
-        function showAnnuncioDetails(annuncioId) {
-            const annuncio = state.searchResults.find(a => a.id === annuncioId);
-            if (!annuncio) return;
-            
-            const sourcesList = annuncio.sources ? annuncio.sources.map(s => 
-                `<li><button onclick="window.open('${s.url}', '_blank')" class="text-blue-600 hover:text-blue-800">${s.site}</button></li>`
-            ).join('') : `<li>${annuncio.fonte}</li>`;
-            
-            const details = `
-📋 <strong>DETTAGLI COMPLETI ANNUNCIO</strong>
-
-🏠 <strong>Tipologia:</strong> ${annuncio.tipologia}
-📍 <strong>Indirizzo:</strong> ${annuncio.indirizzo}, ${annuncio.comune}
-💰 <strong>Prezzo base d'asta:</strong> €${annuncio.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}
-📏 <strong>Metratura:</strong> ${annuncio.metriQuadrati} m²
-🚪 <strong>Locali:</strong> ${annuncio.locali}
-🏷️ <strong>Prezzo al m²:</strong> €${(annuncio.prezzo / annuncio.metriQuadrati).toFixed(2)}
-📅 <strong>Data asta:</strong> ${annuncio.dataAsta}
-
-📝 <strong>Descrizione:</strong>
-${annuncio.descrizione}
-
-🔗 <strong>Disponibile su:</strong>
-${annuncio.sources ? annuncio.sources.map(s => `• ${s.site}: ${s.url}`).join('\n') : annuncio.fonte}
+                    </div>
+                    
+                    <!-- Form -->
+                    <div class="p-6 overflow-y-auto max-h-[60vh]">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">COGNOME *</label>
+                                <input type="text" id="add-cognome" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">NOME *</label>
+                                <input type="text" id="add-nome" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">CUSTOMER CODE *</label>
+                                <input type="text" id="add-codice" 
+                                       value="${parseInt(getUltimoCodice()) + 1}"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">TELEFONO</label>
+                                <input type="tel" id="add-telefono" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">MAIL</label>
+                                <input type="email" id="add-mail" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ATTIVO</label>
+                                <select id="add-attivo" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                                    <option value="SI" selected>SI</option>
+                                    <option value="NO">NO</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">AREA D'INTERESSE *</label>
+                                <input type="text" id="add-area" 
+                                       placeholder="Es: Barbariga, Brescia centro..."
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                                <p class="text-xs text-gray-500 mt-1">Inserisci il comune per calcolo automatico zona</p>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ZONA (calcolata automaticamente)</label>
+                                <div class="flex items-center gap-4">
+                                    <input type="text" id="add-zona" readonly
+                                           class="w-20 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-center font-bold">
+                                    <span id="zona-nome" class="text-gray-600"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="border-t border-gray-200 p-6 bg-gray-50">
+                        <div class="flex justify-between">
+                            <button onclick="closeModal()" 
+                                    class="px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                                Annulla
+                            </button>
+                            <button onclick="saveNewClient()" 
+                                    class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow">
+                                💾 Salva Cliente
+                            </button>
+                        </div>
+                    </div>
+                </div>
             `;
             
-            alert(details);
+            showModal(modalContent);
+            
+            // Calcola zona in tempo reale
+            setTimeout(() => {
+                const areaInput = document.getElementById('add-area');
+                const zonaInput = document.getElementById('add-zona');
+                const zonaNome = document.getElementById('zona-nome');
+                
+                areaInput.addEventListener('input', function() {
+                    const zona = calcolaZonaDaArea(this.value);
+                    if (zona) {
+                        zonaInput.value = zona;
+                        zonaInput.className = `w-20 px-4 py-3 border rounded-lg text-center font-bold ${getZonaColor(zona.toString())}`;
+                        zonaNome.textContent = nomiZone[zona] || '';
+                    } else {
+                        zonaInput.value = '';
+                        zonaInput.className = 'w-20 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-center font-bold';
+                        zonaNome.textContent = '';
+                    }
+                });
+                
+                // Trigger iniziale
+                areaInput.dispatchEvent(new Event('input'));
+            }, 100);
         }
 
-        function showClientSuggestions(annuncioId) {
-            const annuncio = state.searchResults.find(a => a.id === annuncioId);
-            if (!annuncio) return;
+        function saveNewClient() {
+            const cliente = {
+                COGNOME: document.getElementById('add-cognome').value.trim(),
+                NOME: document.getElementById('add-nome').value.trim(),
+                CUSTOMER_CODE: document.getElementById('add-codice').value.trim(),
+                TELEFONO: document.getElementById('add-telefono').value.trim(),
+                MAIL: document.getElementById('add-mail').value.trim(),
+                ATTIVI: document.getElementById('add-attivo').value,
+                AREA_INTERESSE: document.getElementById('add-area').value.trim(),
+                ZONA: document.getElementById('add-zona').value || ''
+            };
             
-            state.selectedAnnuncio = annuncio;
-            state.showClientSuggestions = true;
+            // Validazione
+            if (!cliente.COGNOME || !cliente.NOME || !cliente.CUSTOMER_CODE) {
+                alert('Compila i campi obbligatori: Cognome, Nome e Codice');
+                return;
+            }
+            
+            // Controlla duplicato codice
+            if (state.clients.some(c => c.CUSTOMER_CODE === cliente.CUSTOMER_CODE)) {
+                alert(`Il codice cliente ${cliente.CUSTOMER_CODE} è già utilizzato.`);
+                return;
+            }
+            
+            state.clients.push(cliente);
+            saveData();
+            closeModal();
             render();
+            alert(`✅ Cliente ${cliente.COGNOME} ${cliente.NOME} aggiunto con successo!`);
+        }
+
+        function editClient(codice) {
+            const cliente = state.clients.find(c => c.CUSTOMER_CODE === codice);
+            if (!cliente) return;
+            
+            const modalContent = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4">
+                    <div class="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-bold">✏️ Modifica Cliente</h2>
+                                <p class="text-blue-200">Codice: ${cliente.CUSTOMER_CODE}</p>
+                            </div>
+                            <button onclick="closeModal()" class="text-white hover:text-gray-200 text-2xl">
+                                ×
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 overflow-y-auto max-h-[60vh]">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">COGNOME *</label>
+                                <input type="text" id="edit-cognome" value="${cliente.COGNOME}"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">NOME *</label>
+                                <input type="text" id="edit-nome" value="${cliente.NOME}"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">TELEFONO</label>
+                                <input type="tel" id="edit-telefono" value="${cliente.TELEFONO}"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">MAIL</label>
+                                <input type="email" id="edit-mail" value="${cliente.MAIL}"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ATTIVO</label>
+                                <select id="edit-attivo" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                                    <option value="SI" ${cliente.ATTIVI === 'SI' ? 'selected' : ''}>SI</option>
+                                    <option value="NO" ${cliente.ATTIVI === 'NO' ? 'selected' : ''}>NO</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">AREA D'INTERESSE *</label>
+                                <input type="text" id="edit-area" value="${cliente.AREA_INTERESSE || ''}"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ZONA</label>
+                                <div class="flex items-center gap-4">
+                                    <input type="text" id="edit-zona" value="${cliente.ZONA || ''}" readonly
+                                           class="w-20 px-4 py-3 border rounded-lg text-center font-bold ${getZonaColor(cliente.ZONA)}">
+                                    <span id="edit-zona-nome" class="text-gray-600">${nomiZone[cliente.ZONA] || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 p-6 bg-gray-50">
+                        <div class="flex justify-between">
+                            <button onclick="deleteClient('${cliente.CUSTOMER_CODE}', true)" 
+                                    class="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                                🗑️ Elimina
+                            </button>
+                            <div class="flex gap-3">
+                                <button onclick="closeModal()" 
+                                        class="px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg">
+                                    Annulla
+                                </button>
+                                <button onclick="saveEditedClient('${cliente.CUSTOMER_CODE}')" 
+                                        class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                    💾 Salva Modifiche
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            showModal(modalContent);
+            
+            // Calcola zona in tempo reale
+            setTimeout(() => {
+                const areaInput = document.getElementById('edit-area');
+                const zonaInput = document.getElementById('edit-zona');
+                const zonaNome = document.getElementById('edit-zona-nome');
+                
+                areaInput.addEventListener('input', function() {
+                    const zona = calcolaZonaDaArea(this.value);
+                    if (zona) {
+                        zonaInput.value = zona;
+                        zonaInput.className = `w-20 px-4 py-3 border rounded-lg text-center font-bold ${getZonaColor(zona.toString())}`;
+                        zonaNome.textContent = nomiZone[zona] || '';
+                    }
+                });
+            }, 100);
+        }
+
+        function saveEditedClient(codice) {
+            const index = state.clients.findIndex(c => c.CUSTOMER_CODE === codice);
+            if (index === -1) return;
+            
+            state.clients[index] = {
+                ...state.clients[index],
+                COGNOME: document.getElementById('edit-cognome').value.trim(),
+                NOME: document.getElementById('edit-nome').value.trim(),
+                TELEFONO: document.getElementById('edit-telefono').value.trim(),
+                MAIL: document.getElementById('edit-mail').value.trim(),
+                ATTIVI: document.getElementById('edit-attivo').value,
+                AREA_INTERESSE: document.getElementById('edit-area').value.trim(),
+                ZONA: document.getElementById('edit-zona').value || state.clients[index].ZONA
+            };
+            
+            saveData();
+            closeModal();
+            render();
+            alert('✅ Cliente modificato con successo!');
+        }
+
+        function deleteClient(codice, fromModal = false) {
+            if (!confirm(`Sei sicuro di voler eliminare il cliente con codice ${codice}?`)) {
+                return;
+            }
+            
+            state.clients = state.clients.filter(c => c.CUSTOMER_CODE !== codice);
+            saveData();
+            
+            if (!fromModal) {
+                render();
+            } else {
+                closeModal();
+                render();
+            }
+            
+            alert('✅ Cliente eliminato!');
+        }
+
+        // Gestione modale
+        function showModal(content) {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = `
+                <div class="modal-overlay">
+                    ${content}
+                </div>
+            `;
+            
+            // Chiudi cliccando sull'overlay
+            setTimeout(() => {
+                const overlay = modalContainer.querySelector('.modal-overlay');
+                if (overlay) {
+                    overlay.onclick = (e) => {
+                        if (e.target === overlay) closeModal();
+                    };
+                }
+                
+                // Chiudi con ESC
+                document.addEventListener('keydown', handleEscKey);
+            }, 100);
         }
 
         function closeModal() {
-            state.showClientSuggestions = false;
-            state.selectedAnnuncio = null;
-            render();
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = '';
+            document.removeEventListener('keydown', handleEscKey);
         }
 
-        function openSourceLink(annuncioId, sourceIndex) {
-            const annuncio = state.searchResults.find(a => a.id === annuncioId);
-            if (annuncio && annuncio.sources && annuncio.sources[sourceIndex]) {
-                window.open(annuncio.sources[sourceIndex].url, '_blank');
+        function handleEscKey(e) {
+            if (e.key === 'Escape') {
+                closeModal();
             }
         }
 
-        function exportAnnuncioToPDF(annuncioId) {
-            const annuncio = state.searchResults.find(a => a.id === annuncioId);
-            if (!annuncio) return;
-            
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            // Titolo
-            doc.setFontSize(20);
-            doc.setTextColor(40, 40, 40);
-            doc.text('SCHEDA ANNUNCIO ASTA IMMOBILIARE', 105, 20, { align: 'center' });
-            
-            // Linea separatrice
-            doc.setDrawColor(79, 70, 229);
-            doc.setLineWidth(0.5);
-            doc.line(20, 25, 190, 25);
-            
-            // Dettagli annuncio
-            doc.setFontSize(12);
-            let y = 35;
-            
-            doc.setFont(undefined, 'bold');
-            doc.text('Dettagli Immobile:', 20, y);
-            doc.setFont(undefined, 'normal');
-            y += 8;
-            
-            const details = [
-                `Tipologia: ${annuncio.tipologia}`,
-                `Indirizzo: ${annuncio.indirizzo}, ${annuncio.comune}`,
-                `Prezzo base d'asta: €${annuncio.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}`,
-                `Metratura: ${annuncio.metriQuadrati} m²`,
-                `Locali: ${annuncio.locali}`,
-                `Prezzo al m²: €${(annuncio.prezzo / annuncio.metriQuadrati).toFixed(2)}`,
-                `Data asta: ${annuncio.dataAsta}`
-            ];
-            
-            details.forEach(detail => {
-                doc.text(detail, 25, y);
-                y += 7;
-            });
-            
-            y += 5;
-            
-            // Descrizione
-            doc.setFont(undefined, 'bold');
-            doc.text('Descrizione:', 20, y);
-            doc.setFont(undefined, 'normal');
-            y += 8;
-            
-            const descLines = doc.splitTextToSize(annuncio.descrizione, 170);
-            doc.text(descLines, 25, y);
-            y += descLines.length * 7 + 5;
-            
-            // Fonti
-            if (annuncio.sources && annuncio.sources.length > 0) {
-                doc.setFont(undefined, 'bold');
-                doc.text('Disponibile su:', 20, y);
-                doc.setFont(undefined, 'normal');
-                y += 8;
-                
-                annuncio.sources.forEach((source, idx) => {
-                    doc.text(`${idx + 1}. ${source.site}: ${source.url}`, 25, y);
-                    y += 7;
-                });
-            }
-            
-            // Data generazione
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            doc.text(`Generato il ${new Date().toLocaleDateString('it-IT')} - Piattaforma Aste Immobiliari`, 105, 280, { align: 'center' });
-            
-            // Salva PDF
-            doc.save(`annuncio-${annuncio.comune}-${annuncio.tipologia}-${annuncio.dataAsta}.pdf`);
-            
-            alert('✅ PDF generato con successo!');
-        }
-
-        function exportAllToPDF() {
-            if (state.searchResults.length === 0) {
-                alert('Nessun annuncio da esportare');
-                return;
-            }
-            
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            let y = 20;
-            
-            // Titolo
-            doc.setFontSize(18);
-            doc.setTextColor(40, 40, 40);
-            doc.text('REPORT COMPLETO ANNUNCI ASTA IMMOBILIARE', 105, y, { align: 'center' });
-            y += 10;
-            
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            doc.text(`Generato il ${new Date().toLocaleDateString('it-IT')} - ${state.searchResults.length} annunci trovati`, 105, y, { align: 'center' });
-            y += 15;
-            
-            // Per ogni annuncio
-            state.searchResults.forEach((annuncio, index) => {
-                if (y > 270) {
-                    doc.addPage();
-                    y = 20;
-                }
-                
-                // Titolo annuncio
-                doc.setFontSize(12);
-                doc.setTextColor(79, 70, 229);
-                doc.setFont(undefined, 'bold');
-                doc.text(`${index + 1}. ${annuncio.tipologia} - ${annuncio.comune}`, 20, y);
-                y += 7;
-                
-                // Dettagli
-                doc.setFontSize(10);
-                doc.setTextColor(40, 40, 40);
-                doc.setFont(undefined, 'normal');
-                
-                doc.text(`Indirizzo: ${annuncio.indirizzo}`, 25, y);
-                y += 5;
-                doc.text(`Prezzo: €${annuncio.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})} | m²: ${annuncio.metriQuadrati} | Locali: ${annuncio.locali}`, 25, y);
-                y += 5;
-                doc.text(`Data asta: ${annuncio.dataAsta}`, 25, y);
-                y += 5;
-                
-                // Fonti
-                if (annuncio.sources && annuncio.sources.length > 0) {
-                    const fonti = annuncio.sources.map(s => s.site).join(', ');
-                    doc.text(`Fonti: ${fonti}`, 25, y);
-                    y += 5;
-                }
-                
-                y += 5;
-                
-                // Separatore
-                if (index < state.searchResults.length - 1) {
-                    doc.setDrawColor(200, 200, 200);
-                    doc.setLineWidth(0.2);
-                    doc.line(20, y, 190, y);
-                    y += 8;
-                }
-            });
-            
-            // Footer
-            doc.setFontSize(8);
-            doc.setTextColor(100, 100, 100);
-            doc.text('Piattaforma Aste Immobiliari - Sistema di monitoraggio avanzato', 105, 285, { align: 'center' });
-            
-            doc.save(`report-completo-aste-${new Date().toISOString().split('T')[0]}.pdf`);
-            alert(`✅ Report PDF generato con ${state.searchResults.length} annunci!`);
-        }
-
-        function exportMatchesToPDF(annuncioId) {
-            const annuncio = state.searchResults.find(a => a.id === annuncioId);
-            if (!annuncio) return;
-            
-            const matchedClients = findMatchingClients(annuncio);
-            if (matchedClients.length === 0) {
-                alert('Nessun cliente compatibile da esportare');
-                return;
-            }
-            
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            let y = 20;
-            
-            // Titolo
-            doc.setFontSize(18);
-            doc.setTextColor(40, 40, 40);
-            doc.text('REPORT CLIENTI COMPATIBILI', 105, y, { align: 'center' });
-            y += 8;
-            
-            // Dettagli annuncio
-            doc.setFontSize(12);
-            doc.setTextColor(79, 70, 229);
-            doc.text(`${annuncio.tipologia} - ${annuncio.comune}`, 105, y, { align: 'center' });
-            y += 6;
-            
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            doc.text(`Prezzo: €${annuncio.prezzo.toLocaleString('it-IT')} | Data asta: ${annuncio.dataAsta}`, 105, y, { align: 'center' });
-            y += 15;
-            
-            // Per ogni cliente
-            matchedClients.forEach((client, index) => {
-                if (y > 250) {
-                    doc.addPage();
-                    y = 20;
-                }
-                
-                const matchScore = calculateMatchScore(client, annuncio);
-                const budgetDiff = annuncio.prezzo - client.budget;
-                
-                // Nome cliente e match score
-                doc.setFontSize(12);
-                doc.setTextColor(40, 40, 40);
-                doc.setFont(undefined, 'bold');
-                doc.text(`${index + 1}. ${client.name} - ${matchScore}% Match`, 20, y);
-                y += 7;
-                
-                // Dettagli cliente
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
-                doc.text(`Email: ${client.email}`, 25, y);
-                y += 5;
-                doc.text(`Budget: €${client.budget.toLocaleString('it-IT')} ${budgetDiff <= 0 ? '(Nel budget ✓)' : `(+€${Math.abs(budgetDiff).toLocaleString('it-IT')})`}`, 25, y);
-                y += 5;
-                
-                // Preferenze
-                const matchingPrefs = client.preferenze.filter(pref => 
-                    annuncio.tipologia.includes(pref) || 
-                    annuncio.comune.includes(pref) ||
-                    pref.includes(annuncio.tipologia) ||
-                    pref.includes(annuncio.comune)
-                );
-                
-                if (matchingPrefs.length > 0) {
-                    doc.text(`Preferenze match: ${matchingPrefs.join(', ')}`, 25, y);
-                    y += 5;
-                }
-                
-                // Note
-                doc.text(`Note: "${client.note}"`, 25, y);
-                y += 7;
-                
-                // Separatore
-                if (index < matchedClients.length - 1) {
-                    doc.setDrawColor(200, 200, 200);
-                    doc.setLineWidth(0.2);
-                    doc.line(20, y, 190, y);
-                    y += 10;
-                }
-            });
-            
-            // Footer
-            y += 10;
-            doc.setFontSize(8);
-            doc.setTextColor(100, 100, 100);
-            doc.text(`Report generato il ${new Date().toLocaleDateString('it-IT')} - ${matchedClients.length} clienti compatibili trovati`, 105, 285, { align: 'center' });
-            
-            doc.save(`clienti-compatibili-${annuncio.comune}-${annuncio.tipologia}.pdf`);
-            alert(`✅ Report clienti compatibili esportato!`);
-        }
-
-        function sendProposalToClient(clientId, annuncioId) {
-            const client = state.clients.find(c => c.id === clientId);
-            const annuncio = state.searchResults.find(a => a.id === annuncioId);
-            
-            if (!client || !annuncio) return;
-            
-            const matchScore = calculateMatchScore(client, annuncio);
-            const subject = encodeURIComponent(`Proposta immobile a ${annuncio.comune} - ${annuncio.tipologia}`);
-            const body = encodeURIComponent(`Gentile ${client.name},\n\nAbbiamo individuato un immobile che potrebbe interessarti:\n\n• Tipologia: ${annuncio.tipologia}\n• Indirizzo: ${annuncio.indirizzo}, ${annuncio.comune}\n• Prezzo: €${annuncio.prezzo.toLocaleString('it-IT')}\n• Metratura: ${annuncio.metriQuadrati} m²\n• Data asta: ${annuncio.dataAsta}\n\nCompatibilità con le tue preferenze: ${matchScore}%\n\nCordiali saluti,\nIl tuo agente immobiliare`);
-            
-            window.open(`mailto:${client.email}?subject=${subject}&body=${body}`, '_blank');
-        }
-
-        function viewClientMatches(clientId) {
-            const client = state.clients.find(c => c.id === clientId);
-            if (!client) return;
-            
-            // Filtra annunci compatibili per questo cliente
-            const compatibleAnnunci = state.searchResults.filter(annuncio => 
-                calculateMatchScore(client, annuncio) >= 50
-            );
-            
-            if (compatibleAnnunci.length === 0) {
-                alert(`Nessun annuncio compatibile trovato per ${client.name}`);
-                return;
-            }
-            
-            // Mostra lista annunci compatibili
-            let message = `Annunci compatibili per ${client.name}:\n\n`;
-            compatibleAnnunci.forEach((annuncio, idx) => {
-                const score = calculateMatchScore(client, annuncio);
-                message += `${idx + 1}. ${annuncio.tipologia} a ${annuncio.comune}\n   Prezzo: €${annuncio.prezzo.toLocaleString('it-IT')}\n   Match: ${score}%\n   Data asta: ${annuncio.dataAsta}\n\n`;
-            });
-            
-            alert(message);
-        }
-
-        function addNewClient() {
-            const name = prompt('Nome e cognome del cliente:');
-            if (!name) return;
-            
-            const email = prompt('Email del cliente:');
-            if (!email) return;
-            
-            const budget = parseFloat(prompt('Budget massimo (€):'));
-            if (!budget || isNaN(budget)) return;
-            
-            const preferenze = prompt('Preferenze (separate da virgola, es: Milano, Appartamento, Centro):');
-            if (!preferenze) return;
-            
-            const note = prompt('Note aggiuntive:') || '';
-            
-            const newClient = {
-                id: Date.now().toString(),
-                name: name,
-                email: email,
-                budget: budget,
-                preferenze: preferenze.split(',').map(p => p.trim()),
-                note: note
+        // Utility
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
             };
-            
-            state.clients.push(newClient);
-            alert(`✅ Cliente "${name}" aggiunto con successo!`);
-            render();
-        }
-
-        function editClient(clientId) {
-            const client = state.clients.find(c => c.id === clientId);
-            if (!client) return;
-            
-            const newName = prompt('Modifica nome:', client.name);
-            if (newName) client.name = newName;
-            
-            const newEmail = prompt('Modifica email:', client.email);
-            if (newEmail) client.email = newEmail;
-            
-            const newBudget = parseFloat(prompt('Modifica budget:', client.budget));
-            if (newBudget && !isNaN(newBudget)) client.budget = newBudget;
-            
-            const newPreferenze = prompt('Modifica preferenze (separate da virgola):', client.preferenze.join(', '));
-            if (newPreferenze) client.preferenze = newPreferenze.split(',').map(p => p.trim());
-            
-            const newNote = prompt('Modifica note:', client.note);
-            if (newNote !== null) client.note = newNote;
-            
-            alert('✅ Cliente modificato con successo!');
-            render();
-        }
-
-        function loadMoreResults() {
-            // Simula caricamento di altri risultati
-            state.isLoading = true;
-            render();
-            
-            setTimeout(() => {
-                const newResults = generateMockResults();
-                const deduplicatedNew = deduplicateResults([...state.searchResults, ...newResults]);
-                state.searchResults = deduplicatedNew;
-                state.isLoading = false;
-                state.searchStatus = `✅ Totale: ${deduplicatedNew.length} annunci`;
-                render();
-                
-                // Aggiorna mappa
-                initMap();
-            }, 1000);
         }
 
         // Inizializza app
-        render();
+        function init() {
+            render();
+        }
+
+        // Esponi funzioni globali
+        window.showImportModal = () => { state.activeTab = 'import'; render(); };
+        window.handleDrop = handleDrop;
+        window.handleDragOver = handleDragOver;
+        window.handleDragLeave = handleDragLeave;
+        window.handleFileSelect = handleFileSelect;
+        window.confirmImport = confirmImport;
+        window.clearImport = clearImport;
+        window.exportToExcel = exportToExcel;
+        window.showAddClientModal = showAddClientModal;
+        window.showModal = showModal;
+        window.closeModal = closeModal;
+        window.saveNewClient = saveNewClient;
+        window.editClient = editClient;
+        window.saveEditedClient = saveEditedClient;
+        window.deleteClient = deleteClient;
+
+        // Avvia app
+        init();
     </script>
 </body>
 </html>
