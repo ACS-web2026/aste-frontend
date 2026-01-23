@@ -1705,12 +1705,36 @@ function renderResultCard(result) {
         }
 
         // ========== RICERCA ASTE ==========
-        function performSearch() {
+  function performSearch() {
     const scelta = confirm(
-        "Modalità ricerca:\n\n" +
-        "OK → RICERCA REALE (apre tutti i siti con i tuoi filtri)\n" +
-        "Annulla → DEMO (annunci simulati per test)"
+        "🔍 MODALITÀ RICERCA\n\n" +
+        "Clicca:\n" +
+        "• OK per RICERCA REALE (apre i 22 siti con i tuoi filtri)\n" +
+        "• ANNULLA per DEMO (annunci simulati per test)"
     );
+    
+    if (scelta) {
+        // RICERCA REALE - Apre i siti web
+        avviaRicercheReali();
+    } else {
+        // DEMO - Annunci simulati (il codice esistente)
+        state.isLoading = true;
+        state.searchStatus = 'Ricerca demo in corso...';
+        render();
+        
+        setTimeout(() => {
+            const rawResults = generateMockResults();
+            const deduplicatedResults = deduplicateResults(rawResults);
+            
+            state.searchResults = deduplicatedResults;
+            state.isLoading = false;
+            state.searchStatus = `✅ Trovati ${deduplicatedResults.length} annunci di esempio`;
+            render();
+            
+            initMap();
+        }, 1500);
+    }
+}
     
     if (scelta) {
         // RICERCA REALE
@@ -1802,7 +1826,185 @@ function generateMockResults() {
     
     return results;
 }
+// ========== RICERCA REALE SUI SITI ==========
 
+// Funzione per costruire URL di ricerca REALI per ogni sito
+function costruisciUrlRicercaReale(site, filtri) {
+    const comune = filtri.comune ? filtri.comune.toLowerCase().trim() : '';
+    
+    if (!comune) {
+        return site.url; // URL base del sito se non c'è comune
+    }
+    
+    // Template specifici per ogni sito
+    const templates = {
+        'Asta Legale': `https://www.astalegale.net/aste/${comune}`,
+        'Astagiudiziaria': `https://www.astagiudiziaria.com/ricerca?keyword=${encodeURIComponent(comune)}`,
+        'Aste online': `https://www.asteonline.it/aste-immobiliari/${comune}`,
+        'Asteannunci': `https://www.asteannunci.it/annunci/${comune}`,
+        'Asteavvisi': `https://www.asteavvisi.it/aste/${comune}`,
+        'Astegiudiziarie': `https://www.astegiudiziarie.it/ricerca?citta=${encodeURIComponent(comune)}`,
+        'Astetribunali24': `https://astetribunali24.ilsole24ore.com/aste-immobiliari/${comune}`,
+        'Canale Aste': `https://www.canaleaste.it/aste/immobili/${comune}`,
+        'Enti e Tribunali': `http://www.entietribunali.it/ricerca.php?comune=${encodeURIComponent(comune)}`,
+        'FALLCO Aste': `https://www.fallcoaste.it/aste/${comune}`,
+        'Fallimenti.it': `https://www.fallimenti.it/aste-immobiliari/${comune}`,
+        'Gara Virtuale': `https://www.garavirtuale.it/aste/categoria/immobili/${comune}`,
+        'Gorealbid': `https://www.gobidreal.it/it/aste-Case-e-Appartamenti/?search=${encodeURIComponent(comune)}`,
+        'Immobiliare.it': `https://aste.immobiliare.it/${comune}`,
+        'Legalmente': `https://legalmente.net/aste/${comune}`,
+        'Mercury': `https://www.mercury-auctions.com/it_it/aste-immobiliari/${comune}`,
+        'PVP': `https://pvp.giustizia.it/pvp/ricerca?comune=${encodeURIComponent(comune)}`,
+        'Repubblica': `https://annunci.repubblica.it/aste-immobiliari/${comune}`,
+        'SIVAG': `https://www.sivag.com/aste/${comune}`,
+        'Vendite Notartel': `https://venditepubblichenotarili.notariato.it/ricerca?luogo=${encodeURIComponent(comune)}`,
+        'Avvisi Notartel': `https://avvisinotarili.notariato.it/ricerca?luogo=${encodeURIComponent(comune)}`,
+        'Aste Book': `https://www.astebook.it/it/ricerca.asp?citta=${encodeURIComponent(comune)}`
+    };
+    
+    return templates[site.name] || site.url;
+}
+
+// Funzione per avviare ricerche REALI
+function avviaRicercheReali() {
+    // Verifica se c'è almeno un filtro
+    if (!state.filters.comune && !state.filters.tipologia && !state.filters.prezzoMax) {
+        alert("⚠️ Inserisci almeno un filtro (es: Comune) per effettuare la ricerca reale.");
+        return;
+    }
+    
+    const urlList = [];
+    
+    // Genera URL per tutti i siti
+    SITES.forEach(site => {
+        const searchUrl = costruisciUrlRicercaReale(site, state.filters);
+        if (searchUrl) {
+            urlList.push({
+                nome: site.name,
+                url: searchUrl,
+                icon: site.icon
+            });
+        }
+    });
+    
+    // Mostra pannello con link
+    mostraPannelloRicercheReali(urlList);
+}
+
+// Funzione per mostrare il pannello delle ricerche reali
+function mostraPannelloRicercheReali(urlList) {
+    let modalContent = `
+        <div style="padding: 20px; max-width: 700px; max-height: 80vh; background: white; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
+                <h2 style="margin: 0; color: #1f2937; font-size: 20px; font-weight: bold;">
+                    🌐 Ricerche Reali sui Siti
+                </h2>
+                <button onclick="closeModal()" 
+                        style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; padding: 0;">
+                    ×
+                </button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #4b5563;">📋 Filtri applicati:</h3>
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 14px;">
+    `;
+    
+    // Mostra filtri applicati
+    if (state.filters.comune) {
+        modalContent += `<div><strong>Comune:</strong> ${state.filters.comune}</div>`;
+    }
+    if (state.filters.tipologia) {
+        modalContent += `<div><strong>Tipologia:</strong> ${state.filters.tipologia}</div>`;
+    }
+    if (state.filters.prezzoMin) {
+        modalContent += `<div><strong>Prezzo min:</strong> €${parseInt(state.filters.prezzoMin).toLocaleString('it-IT')}</div>`;
+    }
+    if (state.filters.prezzoMax) {
+        modalContent += `<div><strong>Prezzo max:</strong> €${parseInt(state.filters.prezzoMax).toLocaleString('it-IT')}</div>`;
+    }
+    
+    modalContent += `
+                </div>
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #6b7280;">
+                    Clicca sui siti qui sotto per aprire le ricerche con i tuoi filtri.
+                </p>
+            </div>
+            
+            <div style="flex: 1; overflow-y: auto; padding-right: 5px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;">
+    `;
+    
+    // Mostra tutti i siti come pulsanti
+    urlList.forEach((sito, idx) => {
+        const displayUrl = sito.url.length > 50 ? sito.url.substring(0, 50) + '...' : sito.url;
+        modalContent += `
+                    <a href="${sito.url}" 
+                       target="_blank"
+                       onclick="trackSearchClick('${sito.nome.replace(/'/g, "\\'")}')"
+                       style="display: flex; align-items: center; gap: 12px; padding: 12px 15px; 
+                              background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; 
+                              text-decoration: none; color: #374151; transition: all 0.2s; cursor: pointer;"
+                       onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#d1d5db'"
+                       onmouseout="this.style.background='#f9fafb'; this.style.borderColor='#e5e7eb'">
+                        <span style="font-size: 20px;">${sito.icon}</span>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${sito.nome}
+                            </div>
+                            <div style="font-size: 11px; color: #6b7280; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${displayUrl}
+                            </div>
+                        </div>
+                        <span style="color: #3b82f6; font-size: 14px;">↗️</span>
+                    </a>
+        `;
+    });
+    
+    modalContent += `
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px;">
+                <button onclick="closeModal()" 
+                        style="flex: 1; padding: 12px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                    Chiudi
+                </button>
+                <button onclick="apriTuttiSiti()" 
+                        style="flex: 1; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                    🔓 Apri tutti i siti
+                </button>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 10px; background: #f0f9ff; border-radius: 6px; border: 1px solid #bae6fd;">
+                <p style="margin: 0; font-size: 12px; color: #0369a1;">
+                    💡 <strong>Suggerimento:</strong> I siti si apriranno in nuove schede. Controlla il blocco popup del browser.
+                </p>
+            </div>
+        </div>
+    `;
+    
+    showModal(modalContent);
+}
+
+// Funzione per aprire tutti i siti in una volta
+function apriTuttiSiti() {
+    let count = 0;
+    SITES.forEach(site => {
+        const searchUrl = costruisciUrlRicercaReale(site, state.filters);
+        if (searchUrl) {
+            window.open(searchUrl, '_blank');
+            count++;
+        }
+    });
+    alert(`✅ Aperti ${count} siti in nuove schede!`);
+}
+
+// Funzione per tracciare i click (opzionale)
+function trackSearchClick(siteName) {
+    console.log(`Ricerca reale su: ${siteName}`);
+    // Qui puoi aggiungere analytics se vuoi
+}
         function deduplicateResults(results) {
             const seen = new Set();
             const deduplicated = [];
@@ -2379,6 +2581,9 @@ ${annuncio.coordinate && annuncio.coordinate !== MAP_CENTER ?
         window.showClientSuggestions = showClientSuggestions;
         window.geolocalizzaAnnuncio = geolocalizzaAnnuncio;
         window.downloadTemplate = downloadTemplate;
+        window.avviaRicercheReali = avviaRicercheReali;
+        window.apriTuttiSiti = apriTuttiSiti;
+        window.trackSearchClick = trackSearchClick;
 
     </script>
 </body>
