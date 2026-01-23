@@ -1706,22 +1706,34 @@ function renderResultCard(result) {
 
         // ========== RICERCA ASTE ==========
         function performSearch() {
-            state.isLoading = true;
-            state.searchStatus = 'Ricerca in corso su 7 portali...';
+    const scelta = confirm(
+        "Modalità ricerca:\n\n" +
+        "OK → RICERCA REALE (apre tutti i siti con i tuoi filtri)\n" +
+        "Annulla → DEMO (annunci simulati per test)"
+    );
+    
+    if (scelta) {
+        // RICERCA REALE
+        avviaRicercheReali();
+    } else {
+        // DEMO (il codice esistente)
+        state.isLoading = true;
+        state.searchStatus = 'Ricerca demo in corso...';
+        render();
+        
+        setTimeout(() => {
+            const rawResults = generateMockResults();
+            const deduplicatedResults = deduplicateResults(rawResults);
+            
+            state.searchResults = deduplicatedResults;
+            state.isLoading = false;
+            state.searchStatus = `✅ Trovati ${deduplicatedResults.length} annunci di esempio`;
             render();
             
-            setTimeout(() => {
-                const rawResults = generateMockResults();
-                const deduplicatedResults = deduplicateResults(rawResults);
-                
-                state.searchResults = deduplicatedResults;
-                state.isLoading = false;
-                state.searchStatus = `✅ Trovati ${deduplicatedResults.length} annunci univoci`;
-                render();
-                
-                initMap();
-            }, 1500);
-        }
+            initMap();
+        }, 1500);
+    }
+}
 
 // Modifica la funzione generateMockResults() (circa riga 1850):
 function generateMockResults() {
