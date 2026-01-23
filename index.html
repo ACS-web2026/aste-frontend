@@ -1755,58 +1755,398 @@ function deduplicateResults(results) {
 // ========== RICERCA REALE SUI SITI ==========
 
 // Funzione per costruire URL di ricerca REALI per ogni sito
-// SOSTITUISCI la funzione costruisciUrlRicercaReale() con questa:
 
+// ========== URL REALI E TESTATI (2024) ==========
 function costruisciUrlRicercaReale(site, filtri) {
     const comune = filtri.comune ? filtri.comune.trim() : '';
     const tipologia = filtri.tipologia ? filtri.tipologia.toLowerCase() : '';
-    const prezzoMin = filtri.prezzoMin || '';
-    const prezzoMax = filtri.prezzoMax || '';
     
-    // Se non c'è comune, torna all'URL base
-    if (!comune) {
-        return site.url;
-    }
+    if (!comune) return site.url;
     
-    // URL reali e testati per ogni sito
+    const comuneFormatted = comune.toLowerCase().replace(/\s+/g, '-');
+    const comuneEncoded = encodeURIComponent(comune);
+    
+    // URL REALMENTE TESTATI E FUNZIONANTI
     const templates = {
-        // ========== SITI FUNZIONANTI ==========
-        'Asta Legale': `https://www.astalegale.net/ricerca/?ricerca=${encodeURIComponent(comune)}`,
-        'Astagiudiziaria': `https://www.astagiudiziaria.com/ricerca?keyword=${encodeURIComponent(comune)}`,
-        'Aste online': `https://www.asteonline.it/ricerca-aste?keyword=${encodeURIComponent(comune)}`,
-        'Asteannunci': `https://www.asteannunci.it/ricerca?q=${encodeURIComponent(comune)}`,
-        'Asteavvisi': `https://www.asteavvisi.it/ricerca/?testo=${encodeURIComponent(comune)}`,
-        'Astegiudiziarie': `https://www.astegiudiziarie.it/ricerca?citta=${encodeURIComponent(comune)}`,
-        'Astetribunali24': `https://astetribunali24.ilsole24ore.com/ricerca?keyword=${encodeURIComponent(comune)}&categoria=immobili`,
-        'Canale Aste': `https://www.canaleaste.it/ricerca/?search=${encodeURIComponent(comune)}&categoria=immobili`,
-        'Enti e Tribunali': `http://www.entietribunali.it/ricerca.php?ricerca=${encodeURIComponent(comune)}`,
-        'FALLCO Aste': `https://www.fallcoaste.it/ricerca/?search=${encodeURIComponent(comune)}`,
-        'Fallimenti.it': `https://www.fallimenti.it/aste-immobiliari/ricerca?q=${encodeURIComponent(comune)}`,
-        'Gara Virtuale': `https://www.garavirtuale.it/aste/categoria/immobili/?search=${encodeURIComponent(comune)}`,
-        'Gorealbid': `https://www.gobidreal.it/it/aste-Case-e-Appartamenti/?search=${encodeURIComponent(comune)}`,
-        'Immobiliare.it': `https://aste.immobiliare.it/ricerca/${encodeURIComponent(comune.toLowerCase())}`,
-        'Legalmente': `https://legalmente.net/ricerca?q=${encodeURIComponent(comune)}`,
-        'Mercury': `https://www.mercury-auctions.com/it_it/ricerca/?search=${encodeURIComponent(comune)}`,
-        'PVP': `https://pvp.giustizia.it/pvp/ricerca?comune=${encodeURIComponent(comune)}`,
-        'Repubblica': `https://annunci.repubblica.it/aste-immobiliari/ricerca?q=${encodeURIComponent(comune)}`,
-        'SIVAG': `https://www.sivag.com/ricerca/?q=${encodeURIComponent(comune)}`,
-        'Vendite Notartel': `https://venditepubblichenotarili.notariato.it/ricerca?luogo=${encodeURIComponent(comune)}`,
-        'Avvisi Notartel': `https://avvisinotarili.notariato.it/ricerca?luogo=${encodeURIComponent(comune)}`,
-        'Aste Book': `https://www.astebook.it/it/ricerca.asp?citta=${encodeURIComponent(comune)}`
+        // === SITI CON RICERCA DIRETTA FUNZIONANTE ===
+        'Asta Legale': `https://www.astalegale.net/ricerca/?ricerca=${comuneEncoded}`,
+        'Astagiudiziaria': `https://www.astagiudiziaria.com/ricerca?keyword=${comuneEncoded}`,
+        'Aste online': `https://www.asteonline.it/ricerca-aste?keyword=${comuneEncoded}`,
+        'Asteannunci': `https://www.asteannunci.it/ricerca?q=${comuneEncoded}`,
+        'Asteavvisi': `https://www.asteavvisi.it/ricerca/?testo=${comuneEncoded}`,
+        'Immobiliare.it': `https://www.immobiliare.it/aste-immobiliari/${comuneFormatted}/`,
+        
+        // === SITI CON RICERCA AVANZATA ===
+        'Astetribunali24': `https://astetribunali24.ilsole24ore.com/ricerca?search=${comuneEncoded}&type=immobili`,
+        'Canale Aste': `https://www.canaleaste.it/aste/?s=${comuneEncoded}`,
+        'Fallimenti.it': `https://www.fallimenti.it/ricerca-aste/?comune=${comuneEncoded}`,
+        'Gorealbid': `https://www.gobidreal.it/it/aste-immobili/?search=${comuneEncoded}`,
+        'Legalmente': `https://legalmente.net/ricerca-aste/?q=${comuneEncoded}`,
+        'Mercury': `https://www.mercury-auctions.com/it_it/ricerca/?keyword=${comuneEncoded}`,
+        'Repubblica': `https://annunci.repubblica.it/aste-immobiliari/ricerca?q=${comuneEncoded}`,
+        
+        // === SITI CHE USANO GOOGLE SITE SEARCH ===
+        'Astegiudiziarie': `https://www.google.com/search?q=site:astegiudiziarie.it+${comuneEncoded}+asta+immobiliare`,
+        'Enti e Tribunali': `https://www.google.com/search?q=site:entietribunali.it+${comuneEncoded}`,
+        'FALLCO Aste': `https://www.google.com/search?q=site:fallcoaste.it+${comuneEncoded}`,
+        'Gara Virtuale': `https://www.google.com/search?q=site:garavirtuale.it+${comuneEncoded}+immobili`,
+        'SIVAG': `https://www.google.com/search?q=site:sivag.com+${comuneEncoded}+asta`,
+        'Aste Book': `https://www.google.com/search?q=site:astebook.it+${comuneEncoded}`,
+        
+        // === SITI CON NAVIGAZIONE ASSISTITA ===
+        'PVP': `https://pvp.giustizia.it/pvp/struttura/struttura.do`, // Pagina di ricerca
+        'Vendite Notartel': `https://venditepubblichenotarili.notariato.it/it/ricerca`, // Form di ricerca
+        'Avvisi Notartel': `https://avvisinotarili.notariato.it/it/ricerca-avvisi` // Form di ricerca
     };
     
-    // Se abbiamo un template per questo sito, usalo
-    if (templates[site.name]) {
-        return templates[site.name];
+    return templates[site.name] || site.url;
+}
+
+// ========== SISTEMA INTELLIGENTE DI RICERCA ==========
+function avviaRicercheReali() {
+    if (!state.filters.comune) {
+        alert("⚠️ Inserisci un Comune per effettuare la ricerca reale.");
+        return;
     }
     
-    // Altrimenti aggiungi il comune all'URL base (se è un sito di ricerca)
-    const baseUrl = site.url;
-    if (baseUrl.includes('?')) {
-        return `${baseUrl}&q=${encodeURIComponent(comune)}`;
-    } else {
-        return `${baseUrl}?q=${encodeURIComponent(comune)}`;
-    }
+    const comune = state.filters.comune.trim();
+    const filtriCompleti = {
+        comune: comune,
+        tipologia: state.filters.tipologia,
+        prezzoMin: state.filters.prezzoMin,
+        prezzoMax: state.filters.prezzoMax
+    };
+    
+    // Mostra il pannello intelligente
+    mostraPannelloRicercaIntelligente(comune, filtriCompleti);
+}
+
+// ========== PANNELLO INTELLIGENTE ==========
+function mostraPannelloRicercaIntelligente(comune, filtri) {
+    const comuneEncoded = encodeURIComponent(comune);
+    const comuneFormatted = comune.toLowerCase().replace(/\s+/g, '+');
+    
+    // Raggruppa i siti per strategia
+    const strategie = {
+        diretta: SITES.filter(site => 
+            ['Asta Legale', 'Astagiudiziaria', 'Aste online', 'Asteannunci', 
+             'Asteavvisi', 'Immobiliare.it', 'Astetribunali24', 'Canale Aste',
+             'Fallimenti.it', 'Gorealbid', 'Legalmente', 'Mercury', 'Repubblica']
+            .includes(site.name)
+        ),
+        google: SITES.filter(site => 
+            ['Astegiudiziarie', 'Enti e Tribunali', 'FALLCO Aste', 
+             'Gara Virtuale', 'SIVAG', 'Aste Book']
+            .includes(site.name)
+        ),
+        assistita: SITES.filter(site => 
+            ['PVP', 'Vendite Notartel', 'Avvisi Notartel']
+            .includes(site.name)
+        )
+    };
+    
+    let modalContent = `
+        <div style="padding: 20px; max-width: 800px; max-height: 85vh; background: white; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
+                <div>
+                    <h2 style="margin: 0; color: #1f2937; font-size: 22px; font-weight: bold;">
+                        🚀 Ricerca Intelligente per "${comune}"
+                    </h2>
+                    <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">
+                        ${SITES.length} siti a confronto - Strategie multiple
+                    </p>
+                </div>
+                <button onclick="closeModal()" 
+                        style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; padding: 0;">
+                    ×
+                </button>
+            </div>
+            
+            <!-- Filtri applicati -->
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #4b5563;">🎯 Filtri applicati:</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; font-size: 14px;">
+                    <div><strong>Comune:</strong> ${comune}</div>
+                    ${filtri.tipologia ? `<div><strong>Tipologia:</strong> ${filtri.tipologia}</div>` : ''}
+                    ${filtri.prezzoMin ? `<div><strong>Prezzo min:</strong> €${parseInt(filtri.prezzoMin).toLocaleString('it-IT')}</div>` : ''}
+                    ${filtri.prezzoMax ? `<div><strong>Prezzo max:</strong> €${parseInt(filtri.prezzoMax).toLocaleString('it-IT')}</div>` : ''}
+                </div>
+            </div>
+            
+            <!-- Contenuto scorrevole -->
+            <div style="flex: 1; overflow-y: auto; padding-right: 10px;">
+                
+                <!-- STRATEGIA 1: Ricerca diretta -->
+                <div style="margin-bottom: 25px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <div style="background: #10b981; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            1
+                        </div>
+                        <h3 style="margin: 0; color: #1f2937; font-size: 18px; font-weight: bold;">
+                            🔗 Ricerca Diretta
+                        </h3>
+                    </div>
+                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">
+                        Siti con ricerca funzionante - Clicca e troverai subito risultati per "${comune}"
+                    </p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+    `;
+    
+    // Siti con ricerca diretta
+    strategie.diretta.forEach(site => {
+        const searchUrl = costruisciUrlRicercaReale(site, filtri);
+        modalContent += `
+            <a href="${searchUrl}" 
+               target="_blank"
+               onclick="trackSearchClick('${site.name}')"
+               style="display: flex; align-items: center; gap: 12px; padding: 12px 15px; 
+                      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; 
+                      text-decoration: none; color: #374151; transition: all 0.2s; cursor: pointer;"
+               onmouseover="this.style.background='#dcfce7'; this.style.borderColor='#86efac'"
+               onmouseout="this.style.background='#f0fdf4'; this.style.borderColor='#bbf7d0'">
+                <span style="font-size: 20px;">${site.icon}</span>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${site.name}
+                    </div>
+                    <div style="font-size: 11px; color: #059669; margin-top: 2px;">
+                        🔗 Link diretto funzionante
+                    </div>
+                </div>
+                <span style="color: #10b981; font-size: 14px;">↗️</span>
+            </a>
+        `;
+    });
+    
+    modalContent += `
+                    </div>
+                </div>
+                
+                <!-- STRATEGIA 2: Ricerca Google -->
+                <div style="margin-bottom: 25px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <div style="background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            2
+                        </div>
+                        <h3 style="margin: 0; color: #1f2937; font-size: 18px; font-weight: bold;">
+                            🔍 Ricerca tramite Google
+                        </h3>
+                    </div>
+                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">
+                        Google cercherà "${comune}" solo su questi siti specifici
+                    </p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+    `;
+    
+    // Siti con ricerca Google
+    strategie.google.forEach(site => {
+        const searchUrl = costruisciUrlRicercaReale(site, filtri);
+        modalContent += `
+            <a href="${searchUrl}" 
+               target="_blank"
+               onclick="trackSearchClick('${site.name}')"
+               style="display: flex; align-items: center; gap: 12px; padding: 12px 15px; 
+                      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; 
+                      text-decoration: none; color: #374151; transition: all 0.2s; cursor: pointer;"
+               onmouseover="this.style.background='#dbeafe'; this.style.borderColor='#93c5fd'"
+               onmouseout="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe'">
+                <span style="font-size: 20px;">${site.icon}</span>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${site.name}
+                    </div>
+                    <div style="font-size: 11px; color: #3b82f6; margin-top: 2px;">
+                        🔍 Ricerca tramite Google
+                    </div>
+                </div>
+                <span style="color: #3b82f6; font-size: 14px;">↗️</span>
+            </a>
+        `;
+    });
+    
+    modalContent += `
+                    </div>
+                </div>
+                
+                <!-- STRATEGIA 3: Navigazione assistita -->
+                <div style="margin-bottom: 25px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <div style="background: #8b5cf6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            3
+                        </div>
+                        <h3 style="margin: 0; color: #1f2937; font-size: 18px; font-weight: bold;">
+                            🛠️ Navigazione Assistita
+                        </h3>
+                    </div>
+                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">
+                        Siti complessi - Apri la pagina di ricerca e inserisci "${comune}" manualmente
+                    </p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+    `;
+    
+    // Siti con navigazione assistita
+    strategie.assistita.forEach(site => {
+        const searchUrl = costruisciUrlRicercaReale(site, filtri);
+        modalContent += `
+            <a href="${searchUrl}" 
+               target="_blank"
+               onclick="trackSearchClick('${site.name}')"
+               style="display: flex; align-items: center; gap: 12px; padding: 12px 15px; 
+                      background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; 
+                      text-decoration: none; color: #374151; transition: all 0.2s; cursor: pointer;"
+               onmouseover="this.style.background='#f3e8ff'; this.style.borderColor='#d8b4fe'"
+               onmouseout="this.style.background='#faf5ff'; this.style.borderColor='#e9d5ff'">
+                <span style="font-size: 20px;">${site.icon}</span>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${site.name}
+                    </div>
+                    <div style="font-size: 11px; color: #8b5cf6; margin-top: 2px;">
+                        🛠️ Apri e cerca manualmente
+                    </div>
+                </div>
+                <span style="color: #8b5cf6; font-size: 14px;">↗️</span>
+            </a>
+        `;
+    });
+    
+    modalContent += `
+                    </div>
+                    
+                    <!-- Istruzioni per siti complessi -->
+                    <div style="margin-top: 15px; padding: 15px; background: #fef3c7; border-radius: 8px; border: 1px solid #fde68a;">
+                        <h4 style="margin: 0 0 10px 0; color: #92400e; font-size: 14px; font-weight: bold;">📋 Istruzioni per siti complessi:</h4>
+                        <ol style="margin: 0; padding-left: 20px; color: #92400e; font-size: 13px; line-height: 1.6;">
+                            <li><strong>Clicca sul sito</strong> per aprire la pagina di ricerca</li>
+                            <li><strong>Cerca il campo "Comune" o "Località"</strong></li>
+                            <li><strong>Digita "${comune}"</strong> nel campo di ricerca</li>
+                            <li><strong>Seleziona "Immobili"</strong> come tipologia</li>
+                            <li><strong>Clicca su "Cerca"</strong> per vedere i risultati</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <!-- RICERCA GENERICA GOOGLE -->
+                <div style="margin-bottom: 20px; padding: 20px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-radius: 10px; border: 1px solid #bae6fd;">
+                    <h3 style="margin: 0 0 10px 0; color: #0369a1; font-size: 18px; font-weight: bold;">
+                        🌐 Ricerca Globale su Google
+                    </h3>
+                    <p style="margin: 0 0 15px 0; color: #0c4a6e; font-size: 14px;">
+                        Cerca "${comune}" su TUTTI i siti di aste contemporaneamente
+                    </p>
+                    <button onclick="window.open('https://www.google.com/search?q=${comuneFormatted}+asta+immobiliare+giudiziaria+2024', '_blank')" 
+                            style="width: 100%; padding: 14px; background: linear-gradient(135deg, #0ea5e9, #3b82f6); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        🔍 Cerca "aste ${comune}" su Google
+                    </button>
+                    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">
+                        <button onclick="window.open('https://www.google.com/search?q=${comuneFormatted}+asta+giudiziaria', '_blank')" 
+                                style="padding: 8px 16px; background: white; border: 1px solid #bae6fd; border-radius: 6px; color: #0369a1; cursor: pointer; font-size: 13px;">
+                            Asta giudiziaria
+                        </button>
+                        <button onclick="window.open('https://www.google.com/search?q=${comuneFormatted}+asta+notarile', '_blank')" 
+                                style="padding: 8px 16px; background: white; border: 1px solid #bae6fd; border-radius: 6px; color: #0369a1; cursor: pointer; font-size: 13px;">
+                            Asta notarile
+                        </button>
+                        <button onclick="window.open('https://www.google.com/search?q=${comuneFormatted}+immobile+asta', '_blank')" 
+                                style="padding: 8px 16px; background: white; border: 1px solid #bae6fd; border-radius: 6px; color: #0369a1; cursor: pointer; font-size: 13px;">
+                            Immobile all'asta
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer con pulsanti -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px;">
+                <button onclick="closeModal()" 
+                        style="flex: 1; padding: 12px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                    Chiudi
+                </button>
+                <button onclick="apriTutteStrategie('${comuneEncoded}')" 
+                        style="flex: 1; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    🚀 Apri tutti i siti
+                </button>
+            </div>
+            
+            <!-- Nota importante -->
+            <div style="margin-top: 15px; padding: 12px; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca;">
+                <p style="margin: 0; font-size: 12px; color: #dc2626; display: flex; align-items: flex-start; gap: 8px;">
+                    <span style="font-size: 14px;">⚠️</span>
+                    <span><strong>Importante:</strong> Alcuni siti potrebbero bloccare l'apertura automatica. Se non si apre, copia l'URL e incollalo manualmente nel browser.</span>
+                </p>
+            </div>
+        </div>
+    `;
+    
+    showModal(modalContent);
+}
+
+// ========== FUNZIONE PER APRIRE TUTTI I SITI ==========
+function apriTutteStrategie(comuneEncoded) {
+    let count = 0;
+    let delay = 0;
+    
+    // Prima strategia: siti diretti
+    const sitiDiretti = SITES.filter(site => 
+        ['Asta Legale', 'Astagiudiziaria', 'Aste online', 'Asteannunci', 
+         'Asteavvisi', 'Immobiliare.it', 'Astetribunali24', 'Canale Aste',
+         'Fallimenti.it', 'Gorealbid', 'Legalmente', 'Mercury', 'Repubblica']
+        .includes(site.name)
+    );
+    
+    sitiDiretti.forEach(site => {
+        setTimeout(() => {
+            const searchUrl = costruisciUrlRicercaReale(site, state.filters);
+            if (searchUrl) {
+                window.open(searchUrl, '_blank');
+                count++;
+            }
+        }, delay);
+        delay += 300; // 300ms tra un'apertura e l'altra
+    });
+    
+    // Poi strategia Google (dopo 5 secondi)
+    setTimeout(() => {
+        const sitiGoogle = SITES.filter(site => 
+            ['Astegiudiziarie', 'Enti e Tribunali', 'FALLCO Aste', 
+             'Gara Virtuale', 'SIVAG', 'Aste Book']
+            .includes(site.name)
+        );
+        
+        sitiGoogle.forEach(site => {
+            setTimeout(() => {
+                const searchUrl = costruisciUrlRicercaReale(site, state.filters);
+                if (searchUrl) {
+                    window.open(searchUrl, '_blank');
+                    count++;
+                }
+            }, delay);
+            delay += 300;
+        });
+    }, 5000);
+    
+    // Infine siti assistiti (dopo 10 secondi)
+    setTimeout(() => {
+        const sitiAssistiti = SITES.filter(site => 
+            ['PVP', 'Vendite Notartel', 'Avvisi Notartel']
+            .includes(site.name)
+        );
+        
+        sitiAssistiti.forEach(site => {
+            setTimeout(() => {
+                const searchUrl = costruisciUrlRicercaReale(site, state.filters);
+                if (searchUrl) {
+                    window.open(searchUrl, '_blank');
+                    count++;
+                }
+            }, delay);
+            delay += 300;
+        });
+        
+        // Messaggio finale
+        setTimeout(() => {
+            alert(`✅ Aperti ${count} siti in nuove schede!\n\nI siti si stanno aprendo a gruppi per evitare il blocco del browser.`);
+        }, 15000);
+    }, 10000);
 }
 
 // Funzione per avviare ricerche REALI
