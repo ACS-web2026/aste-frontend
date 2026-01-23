@@ -180,33 +180,8 @@
             if (saved) {
                 state.clients = JSON.parse(saved);
             } else {
-                // Dati di esempio con nuove caratteristiche
-                state.clients = [
-                    {
-                        COGNOME: "Singh",
-                        NOME: "Jasvir",
-                        CUSTOMER_CODE: "1",
-                        TELEFONO: "3270591632",
-                        MAIL: "baljitkaurtoor72@gmail.com",
-                        ATTIVI: "SI",
-                        ZONE: ["7"],
-                        BUDGET_FASCIA: "under50",
-                        NOTE: "Interessato a piccoli immobili nella bassa bresciana",
-                        AREA_INTERESSE: "Barbariga"
-                    },
-                    {
-                        COGNOME: "De Donno",
-                        NOME: "Remo",
-                        CUSTOMER_CODE: "7",
-                        TELEFONO: "3383830276",
-                        MAIL: "",
-                        ATTIVI: "SI",
-                        ZONE: ["1", "7"],
-                        BUDGET_FASCIA: "under100",
-                        NOTE: "70k da mettere a reddito, cerca soluzioni in città e hinterland",
-                        AREA_INTERESSE: "Brescia e altro"
-                    }
-                ];
+                // DATI VUOTI - parti da zero
+                state.clients = [];
                 saveData();
             }
         }
