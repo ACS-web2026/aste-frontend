@@ -1705,35 +1705,19 @@ function renderResultCard(result) {
         }
 
         // ========== RICERCA ASTE ==========
-  function performSearch() {
-    const scelta = confirm(
-        "🔍 MODALITÀ RICERCA\n\n" +
-        "Clicca:\n" +
-        "• OK per RICERCA REALE (apre i 22 siti con i tuoi filtri)\n" +
-        "• ANNULLA per DEMO (annunci simulati per test)"
-    );
+function deduplicateResults(results) {
+    const seen = new Set();
+    const deduplicated = [];
     
-    if (scelta) {
-        // RICERCA REALE - Apre i siti web
-        avviaRicercheReali();
-    } else {
-        // DEMO - Annunci simulati (il codice esistente)
-        state.isLoading = true;
-        state.searchStatus = 'Ricerca demo in corso...';
-        render();
-        
-        setTimeout(() => {
-            const rawResults = generateMockResults();
-            const deduplicatedResults = deduplicateResults(rawResults);
-            
-            state.searchResults = deduplicatedResults;
-            state.isLoading = false;
-            state.searchStatus = `✅ Trovati ${deduplicatedResults.length} annunci di esempio`;
-            render();
-            
-            initMap();
-        }, 1500);
+    for (const result of results) {
+        const key = `${result.comune}_${result.indirizzo.split(' ')[0]}_${Math.floor(result.prezzo / 10000)}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            deduplicated.push(result);
+        }
     }
+    
+    return deduplicated;
 }
     
     if (scelta) {
@@ -1759,7 +1743,6 @@ function renderResultCard(result) {
     }
 }
 
-// Modifica la funzione generateMockResults() (circa riga 1850):
 function generateMockResults() {
     const comuneFiltro = state.filters.comune || '';
     const tipologiaFiltro = state.filters.tipologia || '';
