@@ -57,7 +57,6 @@
         let map = null;
 
         // Nomi e colori delle zone
-              // Nomi e colori delle zone
         const zoneInfo = {
             1: { nome: "CITTÀ E HINTERLAND", colore: "blue" },
             2: { nome: "LAGO DI GARDA", colore: "teal" },
@@ -69,7 +68,6 @@
             8: { nome: "FRANCIACORTA", colore: "orange" }
         };
 
-        // ========== AGGIUNGI QUI ==========
         // Mappatura completa comuni -> zona (presa dal tuo Excel)
         const comuniBrescia = {
             'Acquafredda': '7', 'Adro': '8', 'Agnosine': '6', 'Alfianello': '7',
@@ -123,7 +121,7 @@
             'Visano': '7', 'Vobarno': '6', 'Zone': '6'
         };
 
-        // Coordinate per comuni di Brescia (aggiungere dopo comuniBrescia)
+        // Coordinate per comuni di Brescia
         const coordinateBrescia = {
             'Brescia': [45.5397, 10.2231],
             'Iseo': [45.6584, 10.0539],
@@ -503,6 +501,78 @@
             `;
         }
 
+        function renderResultCard(result) {
+            const prezzoPerMq = result.metriQuadrati > 0 ? (result.prezzo / result.metriQuadrati).toFixed(2) : 'N/A';
+            
+            return `
+            <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+                <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 border-b border-gray-200">
+                    <div class="flex justify-between items-start gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-xl">🏠</span>
+                                <h3 class="text-xl font-bold text-gray-800">${result.tipologia}</h3>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <p class="text-gray-600 flex items-center gap-2">
+                                    <span class="text-lg">📍</span>
+                                    <span>${result.indirizzo}, ${result.comune}</span>
+                                </p>
+                                <button onclick="geolocalizzaAnnuncio(${result.id})" 
+                                        class="text-xs bg-blue-100 text-blue-600 hover:bg-blue-200 px-2 py-1 rounded-lg flex items-center gap-1">
+                                    <span>🗺️</span>
+                                    <span>Mappa</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2.5 rounded-lg shadow">
+                                <p class="text-xl font-bold">€${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
+                                <p class="text-xs opacity-90">Prezzo base d'asta</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-5">
+                    <div class="grid grid-cols-2 gap-3 mb-5">
+                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <p class="text-xs font-medium text-blue-600 mb-1">Metratura</p>
+                            <p class="text-lg font-bold text-blue-700">${result.metriQuadrati} m²</p>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-lg border border-green-100">
+                            <p class="text-xs font-medium text-green-600 mb-1">Locali</p>
+                            <p class="text-lg font-bold text-green-700">${result.locali}</p>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded-lg border border-purple-100">
+                            <p class="text-xs font-medium text-purple-600 mb-1">Prezzo/m²</p>
+                            <p class="text-lg font-bold text-purple-700">€${prezzoPerMq}</p>
+                        </div>
+                        <div class="bg-orange-50 p-3 rounded-lg border border-orange-100">
+                            <p class="text-xs font-medium text-orange-600 mb-1">Data Asta</p>
+                            <p class="text-lg font-bold text-orange-700">${result.dataAsta}</p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-gray-600 mb-5 line-clamp-2">${result.descrizione}</p>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="showAnnuncioDetails(${result.id})" 
+                                class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
+                            <span class="group-hover/btn:scale-110 transition-transform">📊</span>
+                            <span class="text-sm font-medium">Dettagli</span>
+                        </button>
+                        <button onclick="showClientSuggestions(${result.id})" 
+                                class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
+                            <span class="group-hover/btn:scale-110 transition-transform">👥</span>
+                            <span class="text-sm font-medium">Clienti</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+
         function renderClientsTab() {
             const filteredClients = getFilteredClients();
             
@@ -839,77 +909,6 @@
                                     <p class="text-sm text-gray-600">Tutti i campi, inclusi zone e budget</p>
                                 </div>
                             </div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            `;
-        }
-
-        function renderResultCard(result) {
-            const prezzoPerMq = result.metriQuadrati > 0 ? (result.prezzo / result.metriQuadrati).toFixed(2) : 'N/A';
-            
-            return `
-            <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden group">
-                <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 border-b border-gray-200">
-                    <div class="flex justify-between items-start gap-4">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="text-xl">🏠</span>
-                                <h3 class="text-xl font-bold text-gray-800">${result.tipologia}</h3>
-                            </div>
-                            <div class="flex items-center justify-between">
-                            <p class="text-gray-600 flex items-center gap-2">
-                                <span class="text-lg">📍</span>
-                                <span>${result.indirizzo}, ${result.comune}</span>
-                             </p>
-                                <button onclick="geolocalizzaAnnuncio(${result.id})" 
-                                        class="text-xs bg-blue-100 text-blue-600 hover:bg-blue-200 px-2 py-1 rounded-lg flex items-center gap-1">
-                                    <span>🗺️</span>
-                                    <span>Mappa</span>
-                                </button>
-                            </div>
-                        <div class="text-right">
-                            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2.5 rounded-lg shadow">
-                                <p class="text-xl font-bold">€${result.prezzo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
-                                <p class="text-xs opacity-90">Prezzo base d'asta</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="p-5">
-                    <div class="grid grid-cols-2 gap-3 mb-5">
-                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                            <p class="text-xs font-medium text-blue-600 mb-1">Metratura</p>
-                            <p class="text-lg font-bold text-blue-700">${result.metriQuadrati} m²</p>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-lg border border-green-100">
-                            <p class="text-xs font-medium text-green-600 mb-1">Locali</p>
-                            <p class="text-lg font-bold text-green-700">${result.locali}</p>
-                        </div>
-                        <div class="bg-purple-50 p-3 rounded-lg border border-purple-100">
-                            <p class="text-xs font-medium text-purple-600 mb-1">Prezzo/m²</p>
-                            <p class="text-lg font-bold text-purple-700">€${prezzoPerMq}</p>
-                        </div>
-                        <div class="bg-orange-50 p-3 rounded-lg border border-orange-100">
-                            <p class="text-xs font-medium text-orange-600 mb-1">Data Asta</p>
-                            <p class="text-lg font-bold text-orange-700">${result.dataAsta}</p>
-                        </div>
-                    </div>
-                    
-                    <p class="text-gray-600 mb-5 line-clamp-2">${result.descrizione}</p>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="showAnnuncioDetails(${result.id})" 
-                                class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
-                            <span class="group-hover/btn:scale-110 transition-transform">📊</span>
-                            <span class="text-sm font-medium">Dettagli</span>
-                        </button>
-                        <button onclick="showClientSuggestions(${result.id})" 
-                                class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
-                            <span class="group-hover/btn:scale-110 transition-transform">👥</span>
-                            <span class="text-sm font-medium">Clienti</span>
                         </button>
                     </div>
                 </div>
@@ -1730,7 +1729,7 @@
             }
         }
 
-              function showAnnuncioDetails(annuncioId) {
+        function showAnnuncioDetails(annuncioId) {
             const annuncio = state.searchResults.find(a => a.id === annuncioId);
             if (!annuncio) return;
             
@@ -1784,6 +1783,19 @@ ${annuncio.coordinate && annuncio.coordinate !== MAP_CENTER ?
                 alert('Carica prima la mappa effettuando una ricerca.');
             }
         }
+
+        function showClientSuggestions(annuncioId) {
+            const annuncio = state.searchResults.find(a => a.id === annuncioId);
+            if (!annuncio) return;
+            
+            // Ottieni la zona del comune dell'annuncio
+            const zonaComune = getZonaDaComune(annuncio.comune);
+            
+            if (!zonaComune) {
+                const nomeZona = getNomeZonaDaComune(annuncio.comune);
+                alert(`Nessuna zona assegnata per ${annuncio.comune}.\n\nComune non presente nel database zone.`);
+                return;
+            }
             
             // Cerca clienti con questa zona (ZONE contiene codici numerici, es: ["3"])
             const matchedClients = state.clients.filter(client => {
@@ -1949,6 +1961,7 @@ ${annuncio.coordinate && annuncio.coordinate !== MAP_CENTER ?
             state.importedData = null;
             render();
         }
+        
         function downloadTemplate(tipo) {
             let headers, data;
             
@@ -1978,6 +1991,7 @@ ${annuncio.coordinate && annuncio.coordinate !== MAP_CENTER ?
             
             alert(`✅ Template ${tipo} scaricato come ${fileName}`);
         }
+        
         function exportClientsToExcel() {
             if (state.clients.length === 0) {
                 alert('Nessun cliente da esportare');
@@ -2065,6 +2079,7 @@ ${annuncio.coordinate && annuncio.coordinate !== MAP_CENTER ?
             doc.save(`report-aste-${new Date().toISOString().split('T')[0]}.pdf`);
             alert(`✅ Report PDF generato con ${state.searchResults.length} annunci!`);
         }
+        
         // ========== FUNZIONI DI CONVERSIONE ==========
         function getZonaDaComune(comune) {
             if (!comune) return null;
